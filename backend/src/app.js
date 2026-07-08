@@ -23,7 +23,6 @@ app.use(express.urlencoded({ extended: true }));
 // ===================================================================
 app.get('/api/health', async (req, res) => {
   try {
-    // Verificar conexión con la base de datos
     await prisma.$queryRaw`SELECT 1`;
     
     res.json({
@@ -50,26 +49,35 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     endpoints: {
       health: '/api/health',
-      webhook: '/api/webhooks/whatsapp'
+      webhook: '/api/webhooks/whatsapp',
+      auth: '/api/auth/login'
     }
   });
 });
 
 // ===================================================================
-// RUTAS DE WEBHOOKS
+// RUTAS DE AUTENTICACIÓN (S1-B02)
+// ===================================================================
+const authRoutes = require('./routes/auth');
+app.use('/api/auth', authRoutes);
+
+// ===================================================================
+// RUTAS DE WEBHOOKS (S0-B04)
 // ===================================================================
 const webhookRoutes = require('./routes/webhook');
 app.use('/api/webhooks', webhookRoutes);
 
 // ===================================================================
-// INICIAR SERVIDOR (SOLO UNA VEZ)
+// INICIAR SERVIDOR
 // ===================================================================
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-  console.log(` Base de datos: ${process.env.DATABASE_URL?.split('@')[1] || 'No configurada'}`);
+  console.log(` Health check: http://localhost:${PORT}/api/health`);
+  console.log(` Login: http://localhost:${PORT}/api/auth/login`);
+  console.log(` Webhook: http://localhost:${PORT}/api/webhooks/whatsapp`);
+  console.log(`💾 Base de datos: ${process.env.DATABASE_URL?.split('@')[1] || 'No configurada'}`);
 });
 
 // Cerrar conexión con Prisma al terminar
