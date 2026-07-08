@@ -13,11 +13,12 @@
 #*.local
 
 # Archivos de configuración del sistema y editores
-#.vscode/
-#.idea/
-#*.suo
-#*.ntvs*
-#*.njsproj
-#*.sln
-#*.sw?
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.sw?
 
