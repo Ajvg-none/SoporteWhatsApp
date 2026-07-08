@@ -1,26 +1,46 @@
-// Cargar variables de entorno desde el archivo .env
+// ============================================================
+// 1. CARGA DE VARIABLES DE ENTORNO
+// ============================================================
 require('dotenv').config();
 
+// ============================================================
+// 2. IMPORTS
+// ============================================================
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const { PrismaClient } = require('@prisma/client');
 
-// Inicializar Express y Prisma
+// Middlewares de autenticación (S1-B04)
+const { verifyToken, checkSupervisorRole } = require('./middlewares/auth');
+
+// Rutas
+const authRoutes = require('./routes/auth');
+const webhookRoutes = require('./routes/webhook');
+
+// ============================================================
+// 3. INICIALIZACIÓN
+// ============================================================
 const app = express();
 const prisma = new PrismaClient();
 
-// Middlewares
+// ============================================================
+// 4. MIDDLEWARES GLOBALES
+// ============================================================
 app.use(helmet());
 app.use(cors());
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ===================================================================
-// ENDPOINT DE HEALTH CHECK (S0-B03)
-// ===================================================================
+app.use('/uploads', express.static('uploads'));
+
+// ============================================================
+// 5. RUTAS PÚBLICAS
+// ============================================================
+
+// 5.1. Health Check (S0-B03)
 app.get('/api/health', async (req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
@@ -42,7 +62,7 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// Ruta raíz (opcional)
+// 5.2. Ruta raíz
 app.get('/', (req, res) => {
   res.json({
     mensaje: 'API SoporteWhatsApp',
@@ -50,38 +70,105 @@ app.get('/', (req, res) => {
     endpoints: {
       health: '/api/health',
       webhook: '/api/webhooks/whatsapp',
-      auth: '/api/auth/login'
+      auth: '/api/auth/login',
+      protegida: '/api/protegida',
+      'supervisor-only': '/api/supervisor-only'
     }
   });
 });
 
-// ===================================================================
-// RUTAS DE AUTENTICACIÓN (S1-B02)
-// ===================================================================
-const authRoutes = require('./routes/auth');
+// ============================================================
+// 6. RUTAS DE PRUEBA (S1-B04) - ELIMINAR EN PRODUCCIÓN
+// ============================================================
+
+// 6.1. Ruta protegida (cualquier usuario autenticado)
+app.get('/api/protegida', verifyToken, (req, res) => {
+  res.json({
+    success: true,
+    message: 'Acceso autorizado',
+    user: req.user
+  });
+});
+
+// 6.2. Ruta solo para supervisores
+app.get('/api/supervisor-only', verifyToken, checkSupervisorRole, (req, res) => {
+  res.json({
+    success: true,
+    message: 'Acceso autorizado como supervisor',
+    user: req.user
+  });
+});
+
+// ============================================================
+// 7. RUTAS DE LA API
+// ============================================================
+
+// 7.1. Autenticación (S1-B02, S1-B03)
 app.use('/api/auth', authRoutes);
 
-// ===================================================================
-// RUTAS DE WEBHOOKS (S0-B04)
-// ===================================================================
-const webhookRoutes = require('./routes/webhook');
+// 7.2. Webhooks (S1-B05)
 app.use('/api/webhooks', webhookRoutes);
 
-// ===================================================================
-// INICIAR SERVIDOR
-// ===================================================================
+// 7.3. Tickets (S1-B09, S1-B10, S1-B11, S1-B12)
+// DESCOMENTAR CUANDO TENGAMOS EL CONTROLADOR
+const ticketRoutes = require('./routes/tickets');
+app.use('/api/tickets', ticketRoutes);
+
+ //7.4. Contactos (S1-B13)
+ //DESCOMENTAR CUANDO TENGAMOS EL CONTROLADOR
+ const contactRoutes = require('./routes/contacts');
+ app.use('/api/contactos', contactRoutes);
+
+// ============================================================
+// 8. MANEJO DE ERRORES 404 (SIEMPRE AL FINAL)
+// ============================================================
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    error: 'Ruta no encontrada'
+  });
+});
+
+// ============================================================
+// 9. MANEJO DE ERRORES GLOBAL (OPCIONAL)
+// ============================================================
+app.use((err, req, res, next) => {
+  console.error('❌ Error global:', err);
+  res.status(500).json({
+    success: false,
+    error: 'Error interno del servidor'
+  });
+});
+
+// ============================================================
+// 10. INICIO DEL SERVIDOR
+// ============================================================
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-  console.log(` Health check: http://localhost:${PORT}/api/health`);
-  console.log(` Login: http://localhost:${PORT}/api/auth/login`);
-  console.log(` Webhook: http://localhost:${PORT}/api/webhooks/whatsapp`);
-  console.log(`💾 Base de datos: ${process.env.DATABASE_URL?.split('@')[1] || 'No configurada'}`);
+  console.log('\n========================================');
+  console.log('🚀 SOPORTEWHATSAPP - BACKEND');
+  console.log('========================================');
+  console.log(`📡 Servidor corriendo en: http://localhost:${PORT}`);
+  console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
+  console.log(`🔐 Login: http://localhost:${PORT}/api/auth/login`);
+  console.log(`📨 Webhook: http://localhost:${PORT}/api/webhooks/whatsapp`);
+  console.log(`🔒 Ruta protegida: http://localhost:${PORT}/api/protegida`);
+  console.log(`👑 Ruta supervisor: http://localhost:${PORT}/api/supervisor-only`);
+  console.log(`💾 Base de datos: ${process.env.DATABASE_URL?.split('@')[1]?.split('/')[0] || 'No configurada'}`);
+  console.log('========================================\n');
 });
 
-// Cerrar conexión con Prisma al terminar
+// ============================================================
+// 11. CIERRE GRACIOSO
+// ============================================================
 process.on('SIGINT', async () => {
+  console.log('\n🛑 Cerrando servidor...');
+  await prisma.$disconnect();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
   console.log('\n🛑 Cerrando servidor...');
   await prisma.$disconnect();
   process.exit(0);
