@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id              Int       @id @default(autoincrement())
+  nombre          String    @db.VarChar(100)
+  email           String    @unique @db.VarChar(100)
+  contraseñaHash  String    @map("contraseña_hash") @db.VarChar(255)
+  rol             String    @db.VarChar(20)
+  creadoEn        DateTime  @default(now()) @map("creado_en")
+  actualizadoEn   DateTime  @updatedAt @map("actualizado_en")
+
+  ticketsAsignados              Ticket[]  @relation("TicketsAsignados")
+  solicitudesTransferencia      Ticket[]  @relation("SolicitudesTransferencia")
+  mensajes                      Mensaje[]
+  auditoria                     Auditoria[]
+
+  @@map("usuarios")
+}
+
+model Contacto {
+  numeroTelefono  String    @id @db.VarChar(20)
+  nombre          String?   @db.VarChar(100)
+  sucursal        String?   @db.VarChar(100)
+  creadoEn        DateTime  @default(now()) @map("creado_en")
+  actualizadoEn   DateTime  @updatedAt @map("actualizado_en")
+
+  tickets         Ticket[]
+
+  @@index([sucursal])
+  @@index([nombre])
+  @@map("contactos")
+}
+
+model Ticket {
+  id                              Int       @id @default(autoincrement())
+  numeroCliente                   String    @map("numero_cliente") @db.VarChar(20)
+  estado                          String    @db.VarChar(20)
+  tecnicoAsignadoId               Int?      @map("tecnico_asignado_id")
+  solicitudTransferenciaTecnicoId Int?      @map("solicitud_transferencia_tecnico_id")
+  transferido                     Boolean   @default(false)
+  categoria                       String?   @db.VarChar(50)
+  creadoEn                        DateTime  @default(now()) @map("creado_en")
+  actualizadoEn                   DateTime  @updatedAt @map("actualizado_en")
+  cerradoEn                       DateTime? @map("cerrado_en")
+
+  contacto                        Contacto  @relation(fields: [numeroCliente], references: [numeroTelefono], onDelete: Restrict, onUpdate: Cascade)
+  tecnicoAsignado                 Usuario?  @relation("TicketsAsignados", fields: [tecnicoAsignadoId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  solicitudTransferenciaTecnico   Usuario?  @relation("SolicitudesTransferencia", fields: [solicitudTransferenciaTecnicoId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  mensajes                        Mensaje[]
+  auditoria                       Auditoria[]
+
+  @@index([numeroCliente])
+  @@index([estado])
+  @@index([creadoEn])
+  @@index([solicitudTransferenciaTecnicoId])
+  @@index([tecnicoAsignadoId])
+  @@index([transferido])
+  @@map("tickets")
+}
+
+model Mensaje {
+  id                Int      @id @default(autoincrement())
+  ticketId          Int      @map("ticket_id")
+  remitente         String   @db.VarChar(10)
+  tecnicoId         Int?     @map("tecnico_id")
+  contenido         String
+  tipo              String   @default("texto") @db.VarChar(20)
+  urlAdjunto        String?  @map("url_adjunto") @db.VarChar(255)
+  whatsappMessageId String   @unique @map("whatsapp_message_id") @db.VarChar(255)
+  enviadoEn         DateTime @default(now()) @map("enviado_en")
+
+  ticket            Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  tecnico           Usuario? @relation(fields: [tecnicoId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([ticketId])
+  @@index([enviadoEn])
+  @@index([whatsappMessageId])
+  @@map("mensajes")
+}
+
+model Auditoria {
+  id         Int      @id @default(autoincrement())
+  ticketId   Int      @map("ticket_id")
+  usuarioId  Int      @map("usuario_id")
+  accion     String   @db.VarChar(50)
+  detalle    Json?
+  fechaHora  DateTime @default(now()) @map("fecha_hora")
+
+  ticket     Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  usuario    Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([ticketId])
+  @@index([fechaHora])
+  @@index([usuarioId])
+  @@map("auditoria")
+}

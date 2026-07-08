@@ -1,0 +1,23 @@
+
+node_modules/
+.env
+dist/
+
+# Dependencias de Node
+node_modules/
+npm-debug.log*
+
+# Directorio de producción (Compilación final de Vite)
+dist/
+dist-ssr/
+*.local
+
+# Archivos de configuración del sistema y editores
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
