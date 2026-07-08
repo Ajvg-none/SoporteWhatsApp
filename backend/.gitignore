@@ -1,3 +1,7 @@
+
+node_modules/
+.env
+
 # Dependencias de Node
 node_modules/
 npm-debug.log*
@@ -9,3 +13,5 @@ yarn-error.log*
 
 # Archivos generados por Prisma
 /prisma/migrations/
+/prisma/migrations/
+
