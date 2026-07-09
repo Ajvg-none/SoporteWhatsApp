@@ -11,13 +11,14 @@
         </div>
         <p class="text-gray-500 text-sm mt-1">Detalle del ticket y historial de conversación</p>
       </div>
-      <router-link
-        to="/"
-        class="inline-flex items-center text-sm font-semibold text-gray-500 hover:text-primary transition-colors"
-      >
-        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+      <<button
+        @click="$router.back()"
+        class="inline-flex items-center text-sm font-semibold text-gray-500 hover:text-primary transition-colors">
+        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
         Volver a la lista
-      </router-link>
+      </button>
     </div>
 
     <div v-if="loading" class="flex flex-col items-center justify-center py-24">
@@ -502,7 +503,11 @@ const getFileType = (mime) => {
 
 const getAttachmentUrl = (urlPath) => {
   if (urlPath.startsWith('blob:')) return urlPath // URL local de vista previa
-  return `http://localhost:3000${urlPath}`
+  // Obtener la URL base del servidor desde variables de entorno
+  const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+  // Quitar '/api' para obtener la raíz del servidor (donde se sirven los archivos)
+  const baseServer = baseURL.replace(/\/api$/, '')
+  return `${baseServer}${urlPath}`
 }
 
 const openLightbox = (url) => {
