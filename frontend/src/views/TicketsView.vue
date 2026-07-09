@@ -17,15 +17,26 @@
       <div class="flex flex-col md:flex-row gap-4">
         <div class="flex-1 relative">
           <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
           </span>
           <input
             v-model="searchQuery"
             @input="handleSearchInput"
             placeholder="Buscar por número, nombre de cliente o sucursal..."
             type="text"
-            class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary focus:bg-white transition-all placeholder-gray-400"
+            class="w-full pl-10 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary focus:bg-white transition-all placeholder-gray-400"
           />
+          <button
+            v-if="searchQuery"
+            @click="searchQuery = ''; handleSearchInput()"
+            class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -141,6 +152,9 @@
                   <div v-if="ticket.solicitudTransferenciaTecnicoId" class="mt-1">
                     <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200">
                       ⏳ Transf. Pendiente
+                      <span v-if="ticket.solicitudTransferenciaTecnico?.nombre">
+                        a {{ ticket.solicitudTransferenciaTecnico.nombre }}
+                      </span>
                     </span>
                   </div>
                 </td>
@@ -245,11 +259,8 @@ const fetchTickets = async () => {
     // Si el tab seleccionado es distinto de 'todos', se envía el filtro de estado.
     if (selectedStatus.value !== 'todos') {
       params.estado = selectedStatus.value
-    } else {
-      // Por defecto, la pestaña 'todos' muestra todos los NO cerrados
-      params.solo_cerrados = 'false'
     }
-
+    
     const response = await api.get('/tickets', { params })
     if (response.data && response.data.success) {
       tickets.value = response.data.data
