@@ -3,34 +3,45 @@ import { useAuthStore } from '@/stores/auth'
 
 const routes = [
   {
-    path: '/login',
-    name: 'Login',
-    component: () => import('@/views/LoginView.vue'),
-    meta: { isPublic: true } // Cualquiera puede ver el login
+    path: '/',
+    component: () => import('@/layouts/MainLayout.vue'),
+    meta: { requiresAuth: true },
+    children: [
+      {
+        path: '',
+        name: 'Tickets',
+        component: () => import('@/views/TicketsView.vue')
+      },
+      {
+        path: 'tickets/:id',
+        name: 'TicketDetail',
+        component: () => import('@/views/TicketDetailView.vue')
+      },
+      {
+        path: 'dashboard',
+        name: 'Dashboard',
+        component: () => import('@/views/DashboardView.vue'),
+        meta: { requiresSupervisor: true }
+      },
+      {
+        path: 'usuarios',
+        name: 'Users',
+        component: () => import('@/views/UsersView.vue'),
+        meta: { requiresSupervisor: true }
+      }
+    ]
   },
   {
     path: '/',
-    name: 'Tickets',
-    component: () => import('@/views/TicketsView.vue'),
-    meta: { requiresAuth: true } // Requiere estar logueado
-  },
-  {
-    path: '/tickets/:id',
-    name: 'TicketDetail',
-    component: () => import('@/views/TicketDetailView.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/dashboard',
-    name: 'Dashboard',
-    component: () => import('@/views/DashboardView.vue'),
-    meta: { requiresAuth: true, requiresSupervisor: true } // Solo supervisores (RF-28)
-  },
-  {
-    path: '/usuarios',
-    name: 'Users',
-    component: () => import('@/views/UsersView.vue'),
-    meta: { requiresAuth: true, requiresSupervisor: true } // Solo supervisores (RF-05)
+    component: () => import('@/layouts/AuthLayout.vue'),
+    meta: { isPublic: true },
+    children: [
+      {
+        path: 'login',
+        name: 'Login',
+        component: () => import('@/views/LoginView.vue')
+      }
+    ]
   },
   {
     path: '/:pathMatch(.*)*',
@@ -48,8 +59,12 @@ const router = createRouter({
 router.beforeEach((to, from) => {
   const authStore = useAuthStore()
 
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
+  const requiresSupervisor = to.matched.some(record => record.meta.requiresSupervisor)
+  const isPublic = to.matched.some(record => record.meta.isPublic)
+
   // 1. Rutas Públicas
-  if (to.meta.isPublic) {
+  if (isPublic) {
     if (authStore.isAuthenticated && to.name === 'Login') {
       return { name: 'Tickets' } // Redirigir si ya está logueado
     }
@@ -57,12 +72,12 @@ router.beforeEach((to, from) => {
   }
 
   // 2. Rutas Privadas (Requieren Autenticación)
-  if (!authStore.isAuthenticated) {
+  if (requiresAuth && !authStore.isAuthenticated) {
     return { name: 'Login' } // Redirigir al login
   }
 
   // 3. Rutas Restringidas por Rol (Solo Supervisores)
-  if (to.meta.requiresSupervisor && !authStore.isSupervisor) {
+  if (requiresSupervisor && !authStore.isSupervisor) {
     return { name: 'Tickets' } // Redirigir a la vista principal
   }
 
