@@ -84,7 +84,6 @@
               </div>
             </div>
 
-            <!-- Botón de Asignación / Tomar Caso -->
             <div v-if="ticket.estado === 'nuevo'">
               <BaseButton
                 variant="primary"
@@ -97,7 +96,18 @@
               </BaseButton>
             </div>
 
-            <div v-if="ticket.transferido" class="pt-2 border-t border-gray-100 flex items-center gap-2 text-xs font-semibold text-purple-700">
+            <div v-else-if="!isReadOnly && ticket.estado !== 'cerrado'" class="mt-3">
+              <BaseButton
+                variant="secondary"
+                class="w-full flex items-center justify-center"
+                @click="handleTransferCase"
+              >
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+                Transferir Ticket
+              </BaseButton>
+            </div>
+
+            <div v-if="ticket.transferido" class="pt-2 mt-4 border-t border-gray-100 flex items-center gap-2 text-xs font-semibold text-purple-700">
               <BaseBadge variant="purple">✔ Transferido</BaseBadge>
               <span>Caso transferido anteriormente</span>
             </div>
@@ -120,15 +130,13 @@
         </div>
 
         <!-- Chat Container -->
-        <BaseCard class="border border-gray-100 shadow-sm flex flex-col h-[550px] !p-0">
-          <!-- Chat Header -->
+        <BaseCard class="border border-gray-100 shadow-sm flex flex-col h-[calc(100vh-16rem)] min-h-[500px] !p-0">
           <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
             <h3 class="text-base font-bold text-gray-800">Historial de Conversación</h3>
             <span class="text-xs text-gray-400">Canal: WhatsApp</span>
           </div>
 
-          <!-- Chat Body -->
-          <div ref="chatContainer" class="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/40">
+          <div ref="chatContainer" class="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/40 scroll-smooth">
             <div
               v-for="msg in mensajes"
               :key="msg.id"
@@ -378,7 +386,8 @@ const handleTakeCase = async () => {
   if (!ticket.value) return
   actionLoading.value = true
   try {
-    const response = await api.post(`/tickets/${ticket.value.id}/assign`)
+    // Se envía un objeto vacío {} para forzar el encabezado Content-Type correcto
+    const response = await api.post(`/tickets/${ticket.value.id}/assign`, {})
     if (response.data && response.data.success) {
       // Recargar detalles
       await fetchTicketDetails()
@@ -389,9 +398,14 @@ const handleTakeCase = async () => {
     console.error('Error taking case:', error)
     alert(error.response?.data?.error || 'Error al conectar con el servidor.')
   } finally {
-    actionLoading.value = false
+      actionLoading.value = false
+    }
   }
-}
+
+  const handleTransferCase = () => {
+    // Lógica provisional para conectar en el Sprint 2
+    alert('Funcionalidad de transferencia de técnico en desarrollo.');
+  }
 
 // File Select handlers
 const triggerFileSelect = () => {

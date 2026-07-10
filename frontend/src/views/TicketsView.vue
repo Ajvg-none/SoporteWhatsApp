@@ -288,8 +288,7 @@ const handleSearchInput = () => {
 
 const handleTabChange = (status) => {
   selectedStatus.value = status
-  pagination.value.page = ls
-  1
+  pagination.value.page = 1
   fetchTickets()
 }
 
