@@ -11,7 +11,7 @@
         </div>
         <p class="text-gray-500 text-sm mt-1">Detalle del ticket y historial de conversación</p>
       </div>
-      <<button
+      <button
         @click="$router.back()"
         class="inline-flex items-center text-sm font-semibold text-gray-500 hover:text-primary transition-colors">
         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -129,8 +129,7 @@
           </div>
         </div>
 
-        <!-- Chat Container -->
-        <BaseCard class="border border-gray-100 shadow-sm flex flex-col h-[calc(100vh-16rem)] min-h-[500px] !p-0">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col h-[calc(100vh-16rem)] min-h-[500px]">
           <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
             <h3 class="text-base font-bold text-gray-800">Historial de Conversación</h3>
             <span class="text-xs text-gray-400">Canal: WhatsApp</span>
@@ -261,10 +260,10 @@
               </BaseButton>
             </form>
           </div>
-        </BaseCard>
+        </div>
 
         <!-- Historial de Auditoría -->
-        <BaseCard class="border border-gray-100 shadow-sm">
+       <BaseCard class="border border-gray-100 shadow-sm" body-class="!p-0">
           <template #header>
             <h3 class="text-sm font-bold uppercase tracking-wider text-gray-700">Bitácora de Auditoría</h3>
           </template>
@@ -272,12 +271,13 @@
           <div v-if="auditoria.length === 0" class="text-center py-4 text-sm text-gray-400 italic">
             Sin registros de auditoría aún.
           </div>
-          <div v-else class="flow-root mt-2">
-            <ul role="list" class="-mb-8">
-              <li v-for="(item, idx) in auditoria" :key="item.id">
-                <div class="relative pb-8">
-                  <span v-if="idx !== auditoria.length - 1" class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-100" aria-hidden="true"></span>
-                  <div class="relative flex space-x-3">
+          <div v-else class="p-5 max-h-[350px] overflow-y-auto scroll-smooth">
+            <div class="flow-root">
+              <ul role="list" class="-mb-5">
+                <li v-for="(item, idx) in auditoria" :key="item.id">
+                  <div class="relative pb-5">
+                    <span v-if="idx !== auditoria.length - 1" class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-100" aria-hidden="true"></span>
+                    <div class="relative flex space-x-3">
                     <div>
                       <span class="h-8 w-8 rounded-full bg-slate-50 border flex items-center justify-center ring-8 ring-white text-xs">
                         🔧
@@ -292,7 +292,7 @@
                           {{ formatAuditDetails(item) }}
                         </p>
                       </div>
-                      <div class="text-right text-[10px] whitespace-nowrap text-gray-400">
+                          <div class="text-right text-[10px] whitespace-nowrap text-gray-400">
                         {{ formatDate(item.fechaHora) }}
                       </div>
                     </div>
@@ -301,6 +301,7 @@
               </li>
             </ul>
           </div>
+        </div>
         </BaseCard>
       </div>
     </div>
