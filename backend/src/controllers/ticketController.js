@@ -254,7 +254,7 @@ exports.getTicketById = async (req, res) => {
 exports.assignTicket = async (req, res) => {
   try {
     const { id } = req.params;
-    const { tecnico_id } = req.body;
+    const { tecnico_id } = req.body || {}; // Asigna un objeto vacío por defecto
     const userId = req.user.id;
     const userRole = req.user.rol;
 

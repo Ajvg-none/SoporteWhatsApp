@@ -8,12 +8,13 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#2563EB',
-          dark: '#1D4ED8',
+          DEFAULT: '#0284c7',
+          dark: '#0369a1',
+          light: '#e0f2fe',
         },
         danger: {
-          DEFAULT: '#EF4444',
-          dark: '#B91C1C',
+          DEFAULT: '#f43f5e',
+          dark: '#be123c',
         }
       }
     },
