@@ -1,5 +1,16 @@
 <template>
-  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" :class="badgeClasses">
+  <span 
+    class="inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold tracking-wider uppercase border transition-colors duration-150"
+    :class="[
+      badgeClasses,
+      props.variant === 'gray' ? '!bg-slate-50 !text-slate-600 border-slate-200/80' : '',
+      props.variant === 'blue' ? '!bg-sky-50 !text-sky-700 border-sky-200/80' : '',
+      props.variant === 'green' ? '!bg-emerald-50 !text-emerald-700 border-emerald-200/80' : '',
+      props.variant === 'yellow' ? '!bg-amber-50 !text-amber-700 border-amber-200/80' : '',
+      props.variant === 'red' ? '!bg-rose-50 !text-rose-700 border-rose-200/80' : '',
+      props.variant === 'purple' ? '!bg-purple-50 !text-purple-700 border-purple-200/80' : ''
+    ]"
+  >
     <slot />
   </span>
 </template>
