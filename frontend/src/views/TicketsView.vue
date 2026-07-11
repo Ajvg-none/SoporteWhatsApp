@@ -79,19 +79,22 @@
         <BaseButton variant="outline" @click="fetchTickets">Intentar de nuevo</BaseButton>
       </div>
 
-      <!-- No Tickets View -->
-      <div v-else-if="tickets.length === 0" class="text-center py-16">
-        <div class="inline-flex p-4 rounded-full bg-gray-50 text-gray-400 mb-3">
-          <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0a2 2 0 01-2 2H6a2 2 0 01-2-2m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5" />
-          </svg>
-        </div>
-        <p class="text-gray-800 font-semibold">No se encontraron tickets</p>
-        <p class="text-gray-400 text-sm mt-1">Prueba cambiando los filtros o la búsqueda.</p>
-      </div>
+      <!-- Dynamic content with fade transition for empty / table states -->
+      <transition name="fade" mode="out-in">
+        <div :key="ticketsKey">
+          <!-- No Tickets View -->
+          <div v-if="tickets.length === 0" class="text-center py-16">
+            <div class="inline-flex p-4 rounded-full bg-gray-50 text-gray-400 mb-3">
+              <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0a2 2 0 01-2 2H6a2 2 0 01-2-2m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5" />
+              </svg>
+            </div>
+            <p class="text-gray-800 font-semibold">No se encontraron tickets</p>
+            <p class="text-gray-400 text-sm mt-1">Prueba cambiando los filtros o la búsqueda.</p>
+          </div>
 
-      <!-- Table content -->
-      <div v-else>
+          <!-- Table content -->
+          <div v-else>
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-150">
             <thead class="bg-gray-50">
@@ -210,12 +213,14 @@
           </div>
         </div>
       </div>
+      </div>
+      </transition>
     </BaseCard>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
 import BaseCard from '@/components/base/BaseCard.vue'
@@ -236,6 +241,9 @@ const pagination = ref({
   total: 0,
   totalPages: 1
 })
+
+// Computed key to force transition redraw on filter, pagination or search changes
+const ticketsKey = computed(() => `${selectedStatus.value}_${pagination.value.page}_${searchQuery.value}`)
 
 const tabs = [
   { label: 'Todos activos', value: 'todos' },
@@ -330,3 +338,15 @@ onMounted(() => {
   fetchTickets()
 })
 </script>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
+</style>

@@ -1,6 +1,5 @@
 <template>
   <div class="animate-fadeIn space-y-6">
-    <!-- Header -->
     <div class="flex items-center justify-between border-b border-gray-100 pb-4">
       <div>
         <div class="flex items-center gap-3">
@@ -29,7 +28,6 @@
       <span class="text-sm font-medium text-gray-500">Cargando detalles del ticket...</span>
     </div>
 
-    <!-- Error Alert -->
     <div v-else-if="errorMsg" class="p-8 text-center bg-white rounded-2xl shadow-sm border border-red-100">
       <div class="inline-flex p-3 rounded-full bg-red-50 text-red-500 mb-2">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
@@ -39,11 +37,11 @@
       <BaseButton variant="outline" @click="fetchTicketDetails">Reintentar</BaseButton>
     </div>
 
-    <div v-else-if="ticket" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div v-else-if="ticket" class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch h-[calc(100vh-12rem)] min-h-0">
       
-      <!-- Panel de Detalles del Cliente (Columna Izquierda / Lateral) -->
-      <div class="space-y-6 lg:col-span-1">
-        <BaseCard class="border border-gray-100 shadow-sm">
+      <div class="space-y-6 lg:col-span-1 flex flex-col h-full overflow-hidden min-h-0">
+        
+        <BaseCard class="border border-gray-100 shadow-sm shrink-0">
           <template #header>
             <h3 class="text-sm font-bold uppercase tracking-wider text-gray-400">Información del Cliente</h3>
           </template>
@@ -68,7 +66,7 @@
           </div>
         </BaseCard>
 
-        <BaseCard class="border border-gray-100 shadow-sm">
+        <BaseCard class="border border-gray-100 shadow-sm shrink-0">
           <template #header>
             <h3 class="text-sm font-bold uppercase tracking-wider text-gray-400">Responsable y Estado</h3>
           </template>
@@ -113,13 +111,52 @@
             </div>
           </div>
         </BaseCard>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 flex-1 flex flex-col min-h-0 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 shrink-0">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-gray-700">Bitácora de Auditoría</h3>
+          </div>
+          
+          <div v-if="auditoria.length === 0" class="text-center py-4 text-sm text-gray-400 italic shrink-0">
+            Sin registros de auditoría aún.
+          </div>
+          
+          <div v-else class="p-5 flex-1 overflow-y-auto scroll-smooth min-h-0">
+            <div class="flow-root">
+              <ul role="list" class="-mb-5">
+                <li v-for="(item, idx) in auditoria" :key="item.id">
+                  <div class="relative pb-5">
+                    <span v-if="idx !== auditoria.length - 1" class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-100" aria-hidden="true"></span>
+                    <div class="relative flex space-x-3">
+                      <div>
+                        <span class="h-8 w-8 rounded-full bg-slate-50 border flex items-center justify-center ring-8 ring-white text-xs">
+                          🔧
+                        </span>
+                      </div>
+                      <div class="flex-1 min-w-0 pt-1.5 flex justify-between space-x-4">
+                        <div>
+                          <p class="text-xs text-gray-500">
+                            Acción: <b class="text-gray-800 capitalize">{{ formatAuditAction(item.accion) }}</b> por <span class="font-medium text-gray-700">{{ item.usuarioNombre }}</span>
+                          </p>
+                          <p class="text-[11px] text-gray-400 mt-0.5">
+                            {{ formatAuditDetails(item) }}
+                          </p>
+                        </div>
+                        <div class="text-right text-[10px] whitespace-nowrap text-gray-400">
+                          {{ formatDate(item.fechaHora) }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- Panel de Conversación (Columna Derecha / Principal) -->
-      <div class="lg:col-span-2 space-y-6">
-        
-        <!-- Banner de Solo Lectura -->
-        <div v-if="isReadOnly" class="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3 text-amber-800 text-sm">
+      <div class="flex flex-col gap-6 lg:col-span-2 h-full min-h-0 overflow-hidden">
+        <div v-if="isReadOnly" class="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3 text-amber-800 text-sm shrink-0">
           <svg class="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
           <div>
             <p class="font-bold">Modo Solo Lectura</p>
@@ -129,13 +166,13 @@
           </div>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col h-[calc(100vh-16rem)] min-h-[500px]">
-          <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col flex-1 min-h-0 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between shrink-0">
             <h3 class="text-base font-bold text-gray-800">Historial de Conversación</h3>
             <span class="text-xs text-gray-400">Canal: WhatsApp</span>
           </div>
 
-          <div ref="chatContainer" class="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/40 scroll-smooth">
+          <div ref="chatContainer" class="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/40 scroll-smooth min-h-0">
             <div
               v-for="msg in mensajes"
               :key="msg.id"
@@ -148,18 +185,14 @@
                   ? 'bg-primary border-primary/20 text-white rounded-br-none' 
                   : 'bg-white border-gray-100 text-gray-800 rounded-bl-none'"
               >
-                <!-- Remitente Info -->
                 <div class="text-[10px] font-semibold mb-1 opacity-75 capitalize flex items-center gap-1">
                   <span>{{ msg.remitente === 'tecnico' ? (msg.tecnicoNombre || 'Técnico') : (contacto?.nombre || 'Cliente') }}</span>
                 </div>
 
-                <!-- Contenido de Texto -->
                 <p class="whitespace-pre-wrap leading-relaxed">{{ msg.contenido }}</p>
 
-                <!-- Archivo Adjunto -->
                 <div v-if="msg.urlAdjunto" class="mt-2.5 pt-2 border-t" :class="msg.remitente === 'tecnico' ? 'border-white/20' : 'border-gray-100'">
                   
-                  <!-- Imagen -->
                   <div v-if="msg.tipo === 'imagen'">
                     <img
                       :src="getAttachmentUrl(msg.urlAdjunto)"
@@ -169,7 +202,6 @@
                     />
                   </div>
 
-                  <!-- Audio -->
                   <div v-else-if="msg.tipo === 'audio'">
                     <audio controls class="w-full max-w-[240px] h-10 mt-1">
                       <source :src="getAttachmentUrl(msg.urlAdjunto)" />
@@ -177,7 +209,6 @@
                     </audio>
                   </div>
 
-                  <!-- Video -->
                   <div v-else-if="msg.tipo === 'video'">
                     <video controls class="max-h-48 rounded-lg mt-1 w-full">
                       <source :src="getAttachmentUrl(msg.urlAdjunto)" />
@@ -185,7 +216,6 @@
                     </video>
                   </div>
 
-                  <!-- Documento -->
                   <div v-else>
                     <a
                       :href="getAttachmentUrl(msg.urlAdjunto)"
@@ -200,7 +230,6 @@
                   </div>
                 </div>
 
-                <!-- Hora de envío -->
                 <div class="text-[9px] text-right mt-1.5 opacity-60">
                   {{ formatTime(msg.enviadoEn) }}
                 </div>
@@ -208,9 +237,7 @@
             </div>
           </div>
 
-          <!-- Chat Footer (Envío de mensajes) -->
-          <div class="p-4 border-t border-gray-100 bg-white">
-            <!-- Archivo Adjunto en Espera Preview -->
+          <div class="p-4 border-t border-gray-100 bg-white shrink-0">
             <div v-if="selectedFile" class="mb-3 p-2 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between">
               <div class="flex items-center gap-2 overflow-hidden mr-2">
                 <svg class="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
@@ -222,7 +249,6 @@
               </button>
             </div>
 
-            <!-- Form -->
             <form @submit.prevent="handleSendMessage" class="flex gap-2">
               <input
                 type="file"
@@ -261,52 +287,9 @@
             </form>
           </div>
         </div>
-
-        <!-- Historial de Auditoría -->
-       <BaseCard class="border border-gray-100 shadow-sm" body-class="!p-0">
-          <template #header>
-            <h3 class="text-sm font-bold uppercase tracking-wider text-gray-700">Bitácora de Auditoría</h3>
-          </template>
-          
-          <div v-if="auditoria.length === 0" class="text-center py-4 text-sm text-gray-400 italic">
-            Sin registros de auditoría aún.
-          </div>
-          <div v-else class="p-5 max-h-[350px] overflow-y-auto scroll-smooth">
-            <div class="flow-root">
-              <ul role="list" class="-mb-5">
-                <li v-for="(item, idx) in auditoria" :key="item.id">
-                  <div class="relative pb-5">
-                    <span v-if="idx !== auditoria.length - 1" class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-100" aria-hidden="true"></span>
-                    <div class="relative flex space-x-3">
-                    <div>
-                      <span class="h-8 w-8 rounded-full bg-slate-50 border flex items-center justify-center ring-8 ring-white text-xs">
-                        🔧
-                      </span>
-                    </div>
-                    <div class="flex-1 min-w-0 pt-1.5 flex justify-between space-x-4">
-                      <div>
-                        <p class="text-xs text-gray-500">
-                          Acción: <b class="text-gray-800 capitalize">{{ formatAuditAction(item.accion) }}</b> por <span class="font-medium text-gray-700">{{ item.usuarioNombre }}</span>
-                        </p>
-                        <p class="text-[11px] text-gray-400 mt-0.5">
-                          {{ formatAuditDetails(item) }}
-                        </p>
-                      </div>
-                          <div class="text-right text-[10px] whitespace-nowrap text-gray-400">
-                        {{ formatDate(item.fechaHora) }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </li>
-            </ul>
-          </div>
-        </div>
-        </BaseCard>
       </div>
     </div>
 
-    <!-- Lightbox Modal for Images -->
     <div v-if="lightboxUrl" class="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4" @click="lightboxUrl = null">
       <img :src="lightboxUrl" class="max-w-full max-h-full rounded-lg shadow-2xl animate-scaleIn" alt="Imagen ampliada" />
       <button class="absolute top-4 right-4 text-white hover:text-gray-300">
