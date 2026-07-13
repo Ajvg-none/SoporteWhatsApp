@@ -8,6 +8,7 @@ const authController = require('../controllers/authController');
  */
 router.post('/login', authController.login);
 
+
 /**
  * POST /api/auth/logout
  * Cerrar sesión (solo invalida en frontend)

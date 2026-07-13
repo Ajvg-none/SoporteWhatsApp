@@ -7,6 +7,7 @@
     "dev": "nodemon src/app.js",
     "start": "node src/app.js",
     "seed": "node prisma/seed.js",
+    "cleanup": "node -e \"require('./src/services/cleanupService').ejecutarLimpieza()\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "prisma": {
@@ -27,6 +28,7 @@
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.11.0",
     "multer": "^2.2.0",
+    "node-cron": "^4.6.0",
     "pinia": "^3.0.4",
     "prisma": "^6.19.3",
     "vue-router": "^5.1.0"

@@ -12,9 +12,18 @@ exports.login = async (req, res) => {
     console.log('Email recibido:', email);
     console.log('Password recibido:', password);
 
-    // 1. Buscar usuario
+    // 1. Validar que se enviaron credenciales
+    if (!email || !password) {
+      console.log('ERROR: Faltan credenciales');
+      return res.status(400).json({
+        success: false,
+        error: 'Email y contraseña son requeridos'
+      });
+    }
+
+    // 2. Buscar usuario
     const usuario = await prisma.usuario.findUnique({
-      where: { email }
+      where: { email: email.trim().toLowerCase() }
     });
 
     console.log('Usuario encontrado:', usuario ? 'SÍ' : 'NO');
@@ -32,7 +41,7 @@ exports.login = async (req, res) => {
     console.log('Hash en BD:', usuario.contraseñaHash);
     console.log('Primeros 10 chars del hash:', usuario.contraseñaHash?.substring(0, 10));
 
-    // 2. Verificar contraseña
+    // 3. Verificar contraseña
     const passwordValida = await bcrypt.compare(password, usuario.contraseñaHash);
     console.log('Password válida:', passwordValida);
     console.log('=================================\n');
@@ -44,17 +53,18 @@ exports.login = async (req, res) => {
       });
     }
 
-    // 3. Generar JWT sin expiración
+    // 4. Generar JWT sin expiración
     const token = jwt.sign(
       {
         id: usuario.id,
         email: usuario.email,
-        rol: usuario.rol
+        rol: usuario.rol,
+        nombre: usuario.nombre
       },
       process.env.JWT_SECRET || 'clave_secreta_por_defecto'
     );
 
-    // 4. Respuesta exitosa
+    // 5. Respuesta exitosa
     res.json({
       success: true,
       token,
@@ -67,7 +77,7 @@ exports.login = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error en login:', error);
+    console.error('❌ Error en login:', error);
     res.status(500).json({
       success: false,
       error: 'Error interno del servidor'

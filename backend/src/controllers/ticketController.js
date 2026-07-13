@@ -3,8 +3,9 @@ const prisma = new PrismaClient();
 
 /**
  * GET /api/tickets
- * Listado paginado de tickets con filtros
+ * Listado paginado de tickets con filtros y búsqueda
  * Query params: estado, buscar, page, limit, solo_cerrados
+ * ✅ S3-B01: Búsqueda por número, nombre o sucursal
  */
 exports.getTickets = async (req, res) => {
   try {
@@ -35,19 +36,20 @@ exports.getTickets = async (req, res) => {
       };
     }
 
-    // Filtro de búsqueda (número, nombre o sucursal)
-    if (buscar) {
+    // ✅ S3-B01: Filtro de búsqueda mejorado (número, nombre o sucursal)
+    if (buscar && buscar.trim() !== '') {
+      const searchTerm = buscar.trim();
       where.OR = [
         {
           numeroCliente: {
-            contains: buscar,
+            contains: searchTerm,
             mode: 'insensitive'
           }
         },
         {
           contacto: {
             nombre: {
-              contains: buscar,
+              contains: searchTerm,
               mode: 'insensitive'
             }
           }
@@ -55,7 +57,7 @@ exports.getTickets = async (req, res) => {
         {
           contacto: {
             sucursal: {
-              contains: buscar,
+              contains: searchTerm,
               mode: 'insensitive'
             }
           }
@@ -81,6 +83,14 @@ exports.getTickets = async (req, res) => {
             }
           },
           tecnicoAsignado: {
+            select: {
+              id: true,
+              nombre: true,
+              email: true
+            }
+          },
+          // ✅ Incluir también el técnico destino de transferencia pendiente
+          solicitudTransferenciaTecnico: {
             select: {
               id: true,
               nombre: true,
@@ -115,7 +125,6 @@ exports.getTickets = async (req, res) => {
     });
   }
 };
-
 /**
  * GET /api/tickets/:id
  * Detalle completo de un ticket
@@ -470,17 +479,46 @@ exports.sendMessage = async (req, res) => {
       urlAdjunto = `/uploads/${archivo.filename}`;
     }
 
-    // 7. TODO: Enviar mensaje a OpenWA (integración real)
-    // Por ahora simulamos el envío
-    console.log(`📤 Enviando mensaje a OpenWA: ${ticket.contacto.numero_telefono}`);
-    console.log(`📝 Texto: ${contenido || '[Sin texto]'}`);
-    if (archivo) {
-      console.log(`📎 Archivo: ${archivo.originalname} (${archivo.size} bytes)`);
-      console.log(`📁 Ruta: ${archivo.path}`);
-    }
+    // 7. Enviar mensaje a OpenWA (integración REAL)
+const openwaService = require('../services/openwaService');
+let openwaResponse = null;
+let whatsappMessageId = null;
 
-    // Simulación de respuesta de OpenWA
-    const whatsappMessageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+try {
+  const numeroCliente = ticket.contacto.numero_telefono;
+  const texto = contenido || '';
+
+  if (archivo) {
+    // Construir URL pública del archivo
+    const baseURL = `${req.protocol}://${req.get('host')}`;
+    const urlArchivo = `${baseURL}${urlAdjunto}`;
+    
+    openwaResponse = await openwaService.sendMedia(
+      numeroCliente,
+      texto,
+      {
+        url: urlArchivo,
+        mimeType: archivo.mimetype,
+        fileName: archivo.originalname
+      }
+    );
+    console.log(`📎 Archivo enviado a OpenWA: ${archivo.originalname}`);
+  } else {
+    openwaResponse = await openwaService.sendMessage(
+      numeroCliente,
+      texto
+    );
+  }
+
+  whatsappMessageId = openwaResponse?.id || openwaResponse?.messageId || `msg_${Date.now()}`;
+  console.log(`✅ Mensaje enviado a OpenWA, ID: ${whatsappMessageId}`);
+
+} catch (error) {
+  console.error('❌ Error enviando mensaje a OpenWA:', error.message);
+  // Generar ID de fallback para no perder el mensaje en la BD
+  whatsappMessageId = `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  // Continuamos con el guardado en BD aunque falle OpenWA
+}
 
     // 8. Guardar mensaje en la base de datos
     const mensaje = await prisma.mensaje.create({

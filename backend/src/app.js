@@ -121,6 +121,14 @@ app.use('/api/tickets', ticketRoutes);
  const contactRoutes = require('./routes/contacts');
  app.use('/api/contactos', contactRoutes);
 
+ // 7.5. Usuarios (S3-B06, S3-B07)
+const userRoutes = require('./routes/users');
+app.use('/api/users', userRoutes);
+
+// 7.6. Estadísticas (S3-B02)
+const statsRoutes = require('./routes/stats');
+app.use('/api/stats', statsRoutes);
+
 // ============================================================
 // 8. MANEJO DE ERRORES 404 (SIEMPRE AL FINAL)
 // ============================================================
@@ -146,6 +154,15 @@ app.use((err, req, res, next) => {
 // 10. INICIO DEL SERVIDOR
 // ============================================================
 const PORT = process.env.PORT || 3000;
+
+
+// ============================================================
+// 7. CRONJOBS Y SERVICIOS PROGRAMADOS
+// ============================================================
+
+// 7.1. Iniciar cron de limpieza (S3-B05)
+const { iniciarCronLimpieza } = require('./cron/cleanupCron');
+iniciarCronLimpieza();
 
 app.listen(PORT, () => {
   console.log('\n========================================');
