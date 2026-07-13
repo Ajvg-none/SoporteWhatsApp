@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const ticketController = require('../controllers/ticketController');
-const { verifyToken } = require('../middlewares/auth');
+const { verifyToken, checkSupervisorRole } = require('../middlewares/auth');
 const { checkTicketOwnership } = require('../middlewares/ownership');
 const upload = require('../middlewares/upload'); // ← NUEVO
 
