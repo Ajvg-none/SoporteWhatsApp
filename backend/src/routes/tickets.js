@@ -39,4 +39,80 @@ router.post(
   ticketController.sendMessage
 );
 
+
+/**
+ * PUT /api/tickets/:id/status
+ * Cambiar estado del ticket
+ * ✅ Requiere: verifyToken + checkTicketOwnership
+ */
+router.put(
+  '/:id/status',
+  verifyToken,
+  checkTicketOwnership,
+  ticketController.changeStatus
+);
+
+/**
+ * POST /api/tickets/:id/close
+ * Cerrar ticket
+ * ✅ Requiere: verifyToken + checkTicketOwnership
+ */
+router.post(
+  '/:id/close',
+  verifyToken,
+  checkTicketOwnership,
+  ticketController.closeTicket
+);
+
+/**
+ * POST /api/tickets/:id/transfer-request
+ * Solicitar transferencia a otro técnico
+ * ✅ Requiere: verifyToken + checkTicketOwnership
+ * ✅ Verifica transferido=false
+ */
+router.post(
+  '/:id/transfer-request',
+  verifyToken,
+  checkTicketOwnership,
+  ticketController.requestTransfer
+);
+
+/**
+ * POST /api/tickets/:id/transfer-accept
+ * Aceptar transferencia (solo el técnico destino)
+ * ✅ NO usa checkTicketOwnership (validación específica)
+ * ✅ Usa transacción para atomicidad
+ */
+router.post(
+  '/:id/transfer-accept',
+  verifyToken,
+  ticketController.acceptTransfer
+);
+
+/**
+ * POST /api/tickets/:id/transfer-reject
+ * Rechazar transferencia (solo el técnico destino)
+ * ✅ NO usa checkTicketOwnership (validación específica)
+ * ✅ NO modifica transferido
+ */
+router.post(
+  '/:id/transfer-reject',
+  verifyToken,
+  ticketController.rejectTransfer
+);
+
+/**
+ * POST /api/tickets/:id/force-assign
+ * Reasignación forzada por supervisor
+ * ✅ Solo supervisores (checkSupervisorRole)
+ * ✅ NO usa checkTicketOwnership
+ * ✅ NO modifica transferido
+ */
+router.post(
+  '/:id/force-assign',
+  verifyToken,
+  checkSupervisorRole,  // ← Solo supervisores
+  ticketController.forceAssign
+);
+
 module.exports = router;

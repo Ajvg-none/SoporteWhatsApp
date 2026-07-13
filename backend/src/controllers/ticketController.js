@@ -569,3 +569,798 @@ exports.sendMessage = async (req, res) => {
     });
   }
 };
+
+/**
+ * PUT /api/tickets/:id/status
+ * Cambiar estado del ticket (solo propietario)
+ * Body: { estado: string }
+ */
+exports.changeStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { estado } = req.body;
+    const userId = req.user.id;
+
+    // 1. Validar que se envió un estado
+    if (!estado) {
+      return res.status(400).json({
+        success: false,
+        error: 'Debes especificar un estado'
+      });
+    }
+
+    // 2. Validar que el estado sea válido
+    const estadoNormalizado = estado.toLowerCase();
+    const ESTADOS_VALIDOS = ['nuevo', 'asignado', 'esperando', 'resuelto', 'cerrado'];
+    if (!ESTADOS_VALIDOS.includes(estadoNormalizado)) {
+      return res.status(400).json({
+        success: false,
+        error: `Estado inválido. Debe ser uno de: ${ESTADOS_VALIDOS.join(', ')}`
+      });
+    }
+
+    // 3. Obtener el ticket actual
+    const ticketActual = await prisma.ticket.findUnique({
+      where: { id: parseInt(id) }
+    });
+
+    if (!ticketActual) {
+      return res.status(404).json({
+        success: false,
+        error: 'Ticket no encontrado'
+      });
+    }
+
+    // 4. Si el ticket está CERRADO, no se puede modificar
+    if (ticketActual.estado === 'cerrado') {
+      return res.status(400).json({
+        success: false,
+        error: 'No se puede modificar un ticket cerrado'
+      });
+    }
+
+    // 5. Validar transición lógica
+    const estadoActual = ticketActual.estado;
+    
+    // Definir transiciones permitidas
+    const TRANSICIONES_PERMITIDAS = {
+      'nuevo': [], // no se permite cambio manual desde nuevo (usar /assign)
+      'asignado': ['esperando', 'resuelto'],
+      'esperando': ['asignado', 'resuelto'],
+      'resuelto': ['cerrado']
+    };
+
+    const transicionesPermitidas = TRANSICIONES_PERMITIDAS[estadoActual] || [];
+    if (!transicionesPermitidas.includes(estadoNormalizado)) {
+      return res.status(400).json({
+        success: false,
+        error: `No se puede cambiar de "${estadoActual}" a "${estadoNormalizado}". Transiciones permitidas: ${transicionesPermitidas.join(', ') || 'ninguna (use /assign para nuevo)'}`
+      });
+    }
+
+    // 6. Preparar datos de actualización
+    const dataToUpdate = {
+      estado: estadoNormalizado,
+      actualizadoEn: new Date()
+    };
+
+    // Si se cierra el ticket, registrar fecha de cierre
+    if (estadoNormalizado === 'cerrado') {
+      dataToUpdate.cerradoEn = new Date();
+    }
+
+    // 7. Actualizar el ticket
+    const ticketActualizado = await prisma.ticket.update({
+      where: { id: parseInt(id) },
+      data: dataToUpdate,
+      include: {
+        contacto: true,
+        tecnicoAsignado: {
+          select: {
+            id: true,
+            nombre: true,
+            email: true
+          }
+        }
+      }
+    });
+
+    // 8. Registrar en auditoría
+    await prisma.auditoria.create({
+      data: {
+        ticketId: parseInt(id),
+        usuarioId: userId,
+        accion: 'cambio_estado',
+        detalle: {
+          estado_anterior: estadoActual,
+          estado_nuevo: estadoNormalizado
+        },
+        fechaHora: new Date()
+      }
+    });
+
+    // 9. Respuesta exitosa
+    res.json({
+      success: true,
+      message: `Estado actualizado a "${estadoNormalizado}"`,
+      data: {
+        ticket: {
+          id: ticketActualizado.id,
+          estado: ticketActualizado.estado,
+          cerradoEn: ticketActualizado.cerradoEn,
+          actualizadoEn: ticketActualizado.actualizadoEn
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error en changeStatus:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error interno del servidor'
+    });
+  }
+};
+
+/**
+ * POST /api/tickets/:id/close
+ * Cerrar ticket (solo propietario)
+ */
+exports.closeTicket = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    // 1. Obtener el ticket actual
+    const ticketActual = await prisma.ticket.findUnique({
+      where: { id: parseInt(id) }
+    });
+
+    if (!ticketActual) {
+      return res.status(404).json({
+        success: false,
+        error: 'Ticket no encontrado'
+      });
+    }
+
+    // 2. Validar que no esté ya cerrado
+    if (ticketActual.estado === 'cerrado') {
+      return res.status(400).json({
+        success: false,
+        error: 'El ticket ya está cerrado'
+      });
+    }
+
+    // 3. Validar que el estado actual permita cierre
+    const estadosPermitidosCierre = ['asignado', 'esperando', 'resuelto'];
+    if (!estadosPermitidosCierre.includes(ticketActual.estado)) {
+      return res.status(400).json({
+        success: false,
+        error: `No se puede cerrar un ticket en estado "${ticketActual.estado}". Debe estar en: ${estadosPermitidosCierre.join(', ')}`
+      });
+    }
+
+    // 4. Actualizar a CERRADO
+    const ticketActualizado = await prisma.ticket.update({
+      where: { id: parseInt(id) },
+      data: {
+        estado: 'cerrado',
+        cerradoEn: new Date(),
+        actualizadoEn: new Date()
+      },
+      include: {
+        contacto: true,
+        tecnicoAsignado: {
+          select: {
+            id: true,
+            nombre: true,
+            email: true
+          }
+        }
+      }
+    });
+
+    // 5. Registrar en auditoría
+    await prisma.auditoria.create({
+      data: {
+        ticketId: parseInt(id),
+        usuarioId: userId,
+        accion: 'cierre',
+        detalle: {
+          estado_anterior: ticketActual.estado,
+          estado_nuevo: 'cerrado',
+          cerrado_en: new Date().toISOString()
+        },
+        fechaHora: new Date()
+      }
+    });
+
+    // 6. Respuesta exitosa
+    res.json({
+      success: true,
+      message: 'Ticket cerrado exitosamente',
+      data: {
+        ticket: {
+          id: ticketActualizado.id,
+          estado: ticketActualizado.estado,
+          cerradoEn: ticketActualizado.cerradoEn
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error en closeTicket:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error interno del servidor'
+    });
+  }
+};
+
+/**
+ * POST /api/tickets/:id/transfer-request
+ * Solicitar transferencia de ticket a otro técnico
+ * Body: { destino_tecnico_id: number }
+ * ✅ Requiere: verifyToken + checkTicketOwnership
+ * ✅ Verifica que transferido sea false
+ */
+exports.requestTransfer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { destino_tecnico_id } = req.body;
+    const userId = req.user.id;
+    const userRole = req.user.rol;
+
+    // 1. Validar que se envió el destino
+    if (!destino_tecnico_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Debes especificar el técnico destino'
+      });
+    }
+
+    // 2. Validar que el destino sea un número
+    const destinoId = parseInt(destino_tecnico_id);
+    if (isNaN(destinoId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'El ID del técnico destino debe ser un número'
+      });
+    }
+
+    // 3. Validar que no se esté transfiriendo a sí mismo
+    if (destinoId === userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'No puedes transferirte un ticket a ti mismo'
+      });
+    }
+
+    // 4. Obtener el ticket actual
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: parseInt(id) }
+    });
+
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        error: 'Ticket no encontrado'
+      });
+    }
+
+    // 5. Validar que el ticket no esté cerrado
+    if (ticket.estado === 'cerrado') {
+      return res.status(400).json({
+        success: false,
+        error: 'No se puede transferir un ticket cerrado'
+      });
+    }
+
+    // 6. VALIDACIÓN CLAVE: Verificar que transferido sea false
+    if (ticket.transferido === true) {
+      return res.status(409).json({
+        success: false,
+        error: 'Este ticket ya ha sido transferido anteriormente. No se puede solicitar otra transferencia voluntaria.'
+      });
+    }
+
+    // 7. Validar que el técnico destino existe y es técnico (no supervisor)
+    const tecnicoDestino = await prisma.usuario.findUnique({
+      where: { id: destinoId }
+    });
+
+    if (!tecnicoDestino) {
+      return res.status(404).json({
+        success: false,
+        error: 'El técnico destino no existe'
+      });
+    }
+
+    if (tecnicoDestino.rol !== 'tecnico') {
+      return res.status(400).json({
+        success: false,
+        error: 'El destino debe ser un técnico (no supervisor)'
+      });
+    }
+
+    // 8. Validar que no haya una solicitud de transferencia pendiente
+    if (ticket.solicitudTransferenciaTecnicoId) {
+      return res.status(409).json({
+        success: false,
+        error: 'Ya existe una solicitud de transferencia pendiente para este ticket'
+      });
+    }
+
+    // 9. Obtener el nombre del usuario origen para la auditoría
+    const usuarioOrigen = await prisma.usuario.findUnique({
+      where: { id: userId },
+      select: { nombre: true }
+    });
+
+    // 10. Actualizar el ticket con la solicitud
+    const ticketActualizado = await prisma.ticket.update({
+      where: { id: parseInt(id) },
+      data: {
+        solicitudTransferenciaTecnicoId: destinoId,
+        actualizadoEn: new Date()
+      },
+      include: {
+        contacto: true,
+        tecnicoAsignado: {
+          select: {
+            id: true,
+            nombre: true,
+            email: true
+          }
+        }
+      }
+    });
+
+    // 11. Registrar en auditoría
+    await prisma.auditoria.create({
+      data: {
+        ticketId: parseInt(id),
+        usuarioId: userId,
+        accion: 'solicitud_transferencia',
+        detalle: {
+          origen_id: userId,
+          destino_id: destinoId,
+          origen_nombre: usuarioOrigen?.nombre || req.user.email || 'Técnico',
+          destino_nombre: tecnicoDestino.nombre
+        },
+        fechaHora: new Date()
+      }
+    });
+
+    // 12. Respuesta exitosa
+    res.json({
+      success: true,
+      message: `Solicitud de transferencia enviada a ${tecnicoDestino.nombre}`,
+      data: {
+        ticket: {
+          id: ticketActualizado.id,
+          estado: ticketActualizado.estado,
+          solicitudTransferenciaTecnicoId: ticketActualizado.solicitudTransferenciaTecnicoId,
+          transferido: ticketActualizado.transferido
+        },
+        destino: {
+          id: tecnicoDestino.id,
+          nombre: tecnicoDestino.nombre,
+          email: tecnicoDestino.email
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error en requestTransfer:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error interno del servidor'
+    });
+  }
+};
+
+
+/**
+ * POST /api/tickets/:id/transfer-accept
+ * Aceptar solicitud de transferencia (solo el técnico destino)
+ * ✅ Usa transacción para atomicidad
+ * ✅ Establece transferido = true
+ */
+exports.acceptTransfer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    // 1. Obtener el ticket actual con la solicitud pendiente
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: parseInt(id) }
+    });
+
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        error: 'Ticket no encontrado'
+      });
+    }
+
+    // 2. Verificar que hay una solicitud pendiente
+    if (!ticket.solicitudTransferenciaTecnicoId) {
+      return res.status(400).json({
+        success: false,
+        error: 'No hay ninguna solicitud de transferencia pendiente para este ticket'
+      });
+    }
+
+    // 3. Verificar que el usuario autenticado sea el destino de la solicitud
+    if (ticket.solicitudTransferenciaTecnicoId !== userId) {
+      return res.status(403).json({
+        success: false,
+        error: 'No tienes permiso para aceptar esta transferencia. Solo el técnico destino puede aceptarla.'
+      });
+    }
+
+    // 4. Verificar que el ticket no esté cerrado
+    if (ticket.estado === 'cerrado') {
+      return res.status(400).json({
+        success: false,
+        error: 'No se puede aceptar una transferencia para un ticket cerrado'
+      });
+    }
+
+    // 5. Verificar que el ticket no haya sido transferido antes (por si acaso)
+    if (ticket.transferido === true) {
+      return res.status(409).json({
+        success: false,
+        error: 'Este ticket ya ha sido transferido anteriormente'
+      });
+    }
+
+    // 6. Obtener datos del técnico destino (el usuario actual)
+    const tecnicoDestino = await prisma.usuario.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        nombre: true,
+        email: true
+      }
+    });
+
+    // 7. EJECUTAR TRANSACCIÓN PARA GARANTIZAR ATOMICIDAD
+    const resultado = await prisma.$transaction(async (prisma) => {
+      
+      // 7.1. Actualizar el ticket
+      const ticketActualizado = await prisma.ticket.update({
+        where: { id: parseInt(id) },
+        data: {
+          tecnicoAsignadoId: userId,
+          solicitudTransferenciaTecnicoId: null,
+          transferido: true, // ← CLAVE: se marca como transferido
+          actualizadoEn: new Date()
+        },
+        include: {
+          contacto: true,
+          tecnicoAsignado: {
+            select: {
+              id: true,
+              nombre: true,
+              email: true
+            }
+          }
+        }
+      });
+
+      // 7.2. Registrar en auditoría (dentro de la transacción)
+      await prisma.auditoria.create({
+        data: {
+          ticketId: parseInt(id),
+          usuarioId: userId,
+          accion: 'aceptacion_transferencia',
+          detalle: {
+            nuevo_tecnico_id: userId,
+            nuevo_tecnico_nombre: tecnicoDestino?.nombre || 'Técnico'
+          },
+          fechaHora: new Date()
+        }
+      });
+
+      return ticketActualizado;
+    });
+
+    // 8. Respuesta exitosa
+    res.json({
+      success: true,
+      message: 'Transferencia aceptada exitosamente',
+      data: {
+        ticket: {
+          id: resultado.id,
+          estado: resultado.estado,
+          tecnicoAsignadoId: resultado.tecnicoAsignadoId,
+          transferido: resultado.transferido,
+          solicitudTransferenciaTecnicoId: resultado.solicitudTransferenciaTecnicoId,
+          actualizadoEn: resultado.actualizadoEn
+        },
+        tecnicoAsignado: resultado.tecnicoAsignado
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error en acceptTransfer:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error interno del servidor'
+    });
+  }
+};
+
+/**
+ * POST /api/tickets/:id/transfer-reject
+ * Rechazar solicitud de transferencia (solo el técnico destino)
+ * ✅ NO modifica transferido
+ */
+exports.rejectTransfer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    // 1. Obtener el ticket actual con la solicitud pendiente
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: parseInt(id) }
+    });
+
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        error: 'Ticket no encontrado'
+      });
+    }
+
+    // 2. Verificar que hay una solicitud pendiente
+    if (!ticket.solicitudTransferenciaTecnicoId) {
+      return res.status(400).json({
+        success: false,
+        error: 'No hay ninguna solicitud de transferencia pendiente para este ticket'
+      });
+    }
+
+    // 3. Verificar que el usuario autenticado sea el destino de la solicitud
+    if (ticket.solicitudTransferenciaTecnicoId !== userId) {
+      return res.status(403).json({
+        success: false,
+        error: 'No tienes permiso para rechazar esta transferencia. Solo el técnico destino puede rechazarla.'
+      });
+    }
+
+    // 4. Verificar que el ticket no esté cerrado
+    if (ticket.estado === 'cerrado') {
+      return res.status(400).json({
+        success: false,
+        error: 'No se puede rechazar una transferencia para un ticket cerrado'
+      });
+    }
+
+    // 5. Obtener datos del técnico que rechaza
+    const tecnicoRechaza = await prisma.usuario.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        nombre: true,
+        email: true
+      }
+    });
+
+    // 6. Actualizar el ticket (limpiar la solicitud)
+    const ticketActualizado = await prisma.ticket.update({
+      where: { id: parseInt(id) },
+      data: {
+        solicitudTransferenciaTecnicoId: null,
+        actualizadoEn: new Date()
+      },
+      include: {
+        contacto: true,
+        tecnicoAsignado: {
+          select: {
+            id: true,
+            nombre: true,
+            email: true
+          }
+        }
+      }
+    });
+
+    // 7. Registrar en auditoría
+    await prisma.auditoria.create({
+      data: {
+        ticketId: parseInt(id),
+        usuarioId: userId,
+        accion: 'rechazo_transferencia',
+        detalle: {
+          tecnico_rechaza_id: userId,
+          tecnico_rechaza_nombre: tecnicoRechaza?.nombre || 'Técnico'
+        },
+        fechaHora: new Date()
+      }
+    });
+
+    // 8. Respuesta exitosa
+    res.json({
+      success: true,
+      message: 'Transferencia rechazada exitosamente',
+      data: {
+        ticket: {
+          id: ticketActualizado.id,
+          estado: ticketActualizado.estado,
+          tecnicoAsignadoId: ticketActualizado.tecnicoAsignadoId,
+          transferido: ticketActualizado.transferido,
+          solicitudTransferenciaTecnicoId: ticketActualizado.solicitudTransferenciaTecnicoId,
+          actualizadoEn: ticketActualizado.actualizadoEn
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error en rejectTransfer:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error interno del servidor'
+    });
+  }
+};
+
+
+/**
+ * POST /api/tickets/:id/force-assign
+ * Reasignación forzada por supervisor (sin solicitud/aceptación)
+ * ✅ Solo para supervisores (middleware checkSupervisorRole)
+ * ✅ No modifica transferido
+ * ✅ Si estado NUEVO → cambia a ASIGNADO
+ * ✅ Limpia solicitudes pendientes
+ */
+exports.forceAssign = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { destino_tecnico_id } = req.body;
+    const userId = req.user.id;
+    const userRole = req.user.rol;
+
+    // 1. Validar que se envió el destino
+    if (!destino_tecnico_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Debes especificar el técnico destino'
+      });
+    }
+
+    // 2. Validar que el destino sea un número
+    const destinoId = parseInt(destino_tecnico_id);
+    if (isNaN(destinoId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'El ID del técnico destino debe ser un número'
+      });
+    }
+
+    // 3. Obtener el ticket actual
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: parseInt(id) }
+    });
+
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        error: 'Ticket no encontrado'
+      });
+    }
+
+    // 4. Verificar que el ticket no esté cerrado
+    if (ticket.estado === 'cerrado') {
+      return res.status(400).json({
+        success: false,
+        error: 'No se puede reasignar un ticket cerrado'
+      });
+    }
+
+    // 5. Validar que el técnico destino existe y es técnico
+    const tecnicoDestino = await prisma.usuario.findUnique({
+      where: { id: destinoId }
+    });
+
+    if (!tecnicoDestino) {
+      return res.status(404).json({
+        success: false,
+        error: 'El técnico destino no existe'
+      });
+    }
+
+    if (tecnicoDestino.rol !== 'tecnico') {
+      return res.status(400).json({
+        success: false,
+        error: 'El destino debe ser un técnico'
+      });
+    }
+
+    // 6. Guardar el técnico origen actual (para auditoría)
+    const tecnicoOrigen = ticket.tecnicoAsignadoId 
+      ? await prisma.usuario.findUnique({
+          where: { id: ticket.tecnicoAsignadoId },
+          select: { id: true, nombre: true }
+        })
+      : null;
+
+    // 7. Preparar los datos de actualización
+    const dataToUpdate = {
+      tecnicoAsignadoId: destinoId,
+      solicitudTransferenciaTecnicoId: null, // Limpiar solicitudes pendientes
+      actualizadoEn: new Date()
+    };
+
+    // 8. Si el ticket está en estado NUEVO, cambiarlo a ASIGNADO
+    let estadoAnterior = ticket.estado;
+    if (ticket.estado === 'nuevo') {
+      dataToUpdate.estado = 'asignado';
+    }
+
+    // 9. Actualizar el ticket (NO modificar transferido)
+    const ticketActualizado = await prisma.ticket.update({
+      where: { id: parseInt(id) },
+      data: dataToUpdate,
+      include: {
+        contacto: true,
+        tecnicoAsignado: {
+          select: {
+            id: true,
+            nombre: true,
+            email: true
+          }
+        }
+      }
+    });
+
+    // 10. Registrar en auditoría (acción: reasignacion_forzada)
+    await prisma.auditoria.create({
+      data: {
+        ticketId: parseInt(id),
+        usuarioId: userId,
+        accion: 'reasignacion_forzada',
+        detalle: {
+          origen_id: tecnicoOrigen?.id || null,
+          origen_nombre: tecnicoOrigen?.nombre || 'Sin asignar',
+          destino_id: destinoId,
+          destino_nombre: tecnicoDestino.nombre,
+          supervisor_id: userId,
+          estado_anterior: estadoAnterior,
+          estado_nuevo: ticketActualizado.estado
+        },
+        fechaHora: new Date()
+      }
+    });
+
+    // 11. Respuesta exitosa
+    res.json({
+      success: true,
+      message: `Ticket reasignado forzosamente a ${tecnicoDestino.nombre}`,
+      data: {
+        ticket: {
+          id: ticketActualizado.id,
+          estado: ticketActualizado.estado,
+          tecnicoAsignadoId: ticketActualizado.tecnicoAsignadoId,
+          transferido: ticketActualizado.transferido, // No se modifica
+          solicitudTransferenciaTecnicoId: ticketActualizado.solicitudTransferenciaTecnicoId,
+          actualizadoEn: ticketActualizado.actualizadoEn
+        },
+        tecnicoAsignado: ticketActualizado.tecnicoAsignado,
+        origen: tecnicoOrigen ? {
+          id: tecnicoOrigen.id,
+          nombre: tecnicoOrigen.nombre
+        } : null
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error en forceAssign:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error interno del servidor'
+    });
+  }
+};

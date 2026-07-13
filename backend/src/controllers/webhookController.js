@@ -75,6 +75,35 @@ exports.receiveWebhook = async (req, res) => {
     // ============================================================
     const ticket = await findOrCreateOpenTicket(from);
     console.log(`🎫 Ticket #${ticket.id} - Estado: ${ticket.estado}`);
+
+    // ============================================================
+// 4.1 REGISTRAR AUDITORÍA EN CREACIÓN DE TICKET (S2-B08)
+// ============================================================
+// Solo registrar si el ticket es NUEVO (recién creado)
+// NOTA: findOrCreateOpenTicket devuelve el ticket, pero no sabemos si es nuevo o existente.
+// Para saberlo, podemos verificar si tiene mensajes previos o si su estado es 'nuevo' y no tiene asignado.
+// Una forma más sencilla: comprobar si el ticket tiene algún mensaje asociado.
+
+const mensajesExistentes = await prisma.mensaje.count({
+  where: { ticketId: ticket.id }
+});
+
+// Si no tiene mensajes previos, es un ticket nuevo
+if (mensajesExistentes === 0) {
+  await prisma.auditoria.create({
+    data: {
+      ticketId: ticket.id,
+      usuarioId: null, // No hay usuario técnico, es automático
+      accion: 'creacion',
+      detalle: {
+        numero_cliente: from,
+        creado_por: 'sistema_webhook'
+      },
+      fechaHora: new Date()
+    }
+  });
+  console.log(`📝 Auditoría: Ticket #${ticket.id} creado automáticamente`);
+}
     
     // ============================================================
     // 5. GUARDAR MENSAJE CON IDEMPOTENCIA (S1-B08)
