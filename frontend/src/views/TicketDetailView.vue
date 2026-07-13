@@ -3,11 +3,34 @@
     <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 shrink-0">
       <div>
         <div class="flex items-center gap-3">
-          <h1 class="text-xl font-black text-slate-800 dark:text-white">Ticket #{{ $route.params.id }}</h1>
-          <BaseBadge v-if="ticket" :variant="getStatusVariant(ticket.estado)">
-            <span class="capitalize">{{ ticket.estado }}</span>
-          </BaseBadge>
-        </div>
+  <h1 class="text-xl font-black text-slate-800 dark:text-white">Ticket #{{ $route.params.id }}</h1>
+  
+  <!-- Badge de estado (siempre visible) -->
+  <BaseBadge v-if="ticket" :variant="getStatusVariant(ticket.estado)">
+    <span class="capitalize">{{ ticket.estado }}</span>
+  </BaseBadge>
+  
+  <!-- Dropdown de cambio de estado (solo si se puede cambiar) -->
+  <div v-if="canChangeStatus" class="relative">
+    <BaseDropdown
+      v-model="selectedStatus"
+      :options="availableStatusOptions"
+      placeholder="Cambiar estado..."
+      :disabled="statusLoading"
+      @update:modelValue="handleChangeStatus"
+      class="w-48"
+    />
+    <svg 
+      v-if="statusLoading" 
+      class="animate-spin absolute right-10 top-1/2 -translate-y-1/2 h-4 w-4 text-primary pointer-events-none" 
+      fill="none" 
+      viewBox="0 0 24 24"
+    >
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+    </svg>
+  </div>
+</div>
         <p class="text-slate-450 dark:text-slate-400 text-xs mt-1 font-semibold">Detalle del ticket y historial de conversación</p>
       </div>
       <button
@@ -25,7 +48,7 @@
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
       </svg>
-      <span class="text-sm font-semibold text-slate-400">Cargando detalles del ticket...</span>
+      <span class="text-sm font-semibold text-slate-400 dark:text-slate-300">Cargando detalles del ticket...</span>
     </div>
 
     <div v-else-if="errorMsg" class="p-8 text-center bg-white dark:bg-slate-900 rounded-3xl border border-red-100/80 dark:border-red-900/30 shadow-md">
@@ -33,7 +56,7 @@
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
       </div>
       <p class="text-red-700 dark:text-red-400 font-bold mb-1">Error al cargar el ticket</p>
-      <p class="text-red-500 text-xs mb-4 font-semibold">{{ errorMsg }}</p>
+      <p class="text-red-500 dark:text-red-300 text-xs mb-4 font-semibold">{{ errorMsg }}</p>
       <BaseButton variant="outline" @click="fetchTicketDetails">Reintentar</BaseButton>
     </div>
 
@@ -43,40 +66,40 @@
         
         <BaseCard class="border border-slate-100 dark:border-slate-800 shadow-sm shrink-0">
           <template #header>
-            <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">Información del Cliente</h3>
+            <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-400">Información del Cliente</h3>
           </template>
           
           <div class="space-y-4">
             <div>
-              <label class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Nombre</label>
-              <p class="text-sm font-bold text-slate-800 dark:text-slate-200 mt-0.5">{{ contacto?.nombre || 'Cliente sin registrar' }}</p>
+              <label class="text-[10px] text-slate-400 dark:text-slate-400 font-bold uppercase tracking-wider">Nombre</label>
+              <p class="text-sm font-bold text-slate-800 dark:text-white mt-0.5">{{ contacto?.nombre || 'Cliente sin registrar' }}</p>
             </div>
             <div>
-              <label class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Teléfono / WhatsApp</label>
-              <p class="text-xs font-bold text-slate-650 dark:text-slate-350 font-mono mt-0.5">{{ formatPhone(contacto?.numero_telefono || ticket.numeroCliente) }}</p>
+              <label class="text-[10px] text-slate-400 dark:text-slate-400 font-bold uppercase tracking-wider">Teléfono / WhatsApp</label>
+              <p class="text-xs font-bold text-slate-700 dark:text-slate-200 font-mono mt-0.5">{{ formatPhone(contacto?.numero_telefono || ticket.numeroCliente) }}</p>
             </div>
             <div>
-              <label class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Sucursal</label>
-              <p class="text-xs font-bold text-slate-650 dark:text-slate-350 mt-0.5">{{ contacto?.sucursal || 'Sin sucursal asignada' }}</p>
+              <label class="text-[10px] text-slate-400 dark:text-slate-400 font-bold uppercase tracking-wider">Sucursal</label>
+              <p class="text-xs font-bold text-slate-700 dark:text-slate-200 mt-0.5">{{ contacto?.sucursal || 'Sin sucursal asignada' }}</p>
             </div>
             <div>
-              <label class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Creado el</label>
-              <p class="text-xs font-semibold text-slate-450 dark:text-slate-400 mt-0.5">{{ formatDate(ticket.creadoEn) }}</p>
+              <label class="text-[10px] text-slate-400 dark:text-slate-400 font-bold uppercase tracking-wider">Creado el</label>
+              <p class="text-xs font-semibold text-slate-600 dark:text-slate-300 mt-0.5">{{ formatDate(ticket.creadoEn) }}</p>
             </div>
           </div>
         </BaseCard>
 
         <BaseCard class="border border-slate-100 dark:border-slate-800 shadow-sm shrink-0">
           <template #header>
-            <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">Responsable y Estado</h3>
+            <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-400">Responsable y Estado</h3>
           </template>
           
           <div class="space-y-4">
             <div>
-              <label class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Técnico Asignado</label>
+              <label class="text-[10px] text-slate-400 dark:text-slate-400 font-bold uppercase tracking-wider">Técnico Asignado</label>
               <div class="flex items-center gap-2 mt-1.5">
                 <span class="w-2 h-2 rounded-full animate-pulse" :class="ticket.tecnicoAsignadoId ? 'bg-sky-500' : 'bg-slate-300 dark:bg-slate-700'"></span>
-                <span class="text-xs font-bold text-slate-700 dark:text-slate-300">
+                <span class="text-xs font-bold text-slate-700 dark:text-white">
                   {{ tecnicoAsignado?.nombre || 'Sin asignar' }}
                 </span>
               </div>
@@ -95,29 +118,44 @@
             </div>
 
             <div v-else-if="!isReadOnly && ticket.estado !== 'cerrado'" class="mt-3">
-              <BaseButton
-                variant="secondary"
-                class="w-full flex items-center justify-center border-slate-200/80 dark:border-slate-700/60 cursor-pointer text-xs font-bold shadow-xs"
-                @click="handleTransferCase"
-              >
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
-                Transferir Ticket
-              </BaseButton>
-            </div>
+  <BaseButton
+    variant="secondary"
+    class="w-full flex items-center justify-center border-slate-200/80 dark:border-slate-700/60 cursor-pointer text-xs font-bold shadow-xs"
+    @click="handleTransferCase"
+  >
+    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+    Transferir Ticket
+  </BaseButton>
+</div>
 
-            <div v-if="ticket.transferido" class="pt-2 mt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-purple-700 dark:text-purple-400">
-              <BaseBadge variant="purple">✔ Transferido</BaseBadge>
-              <span>Caso transferido anteriormente</span>
-            </div>
+<!-- Botón Cerrar Ticket (solo propietario + estados permitidos) -->
+<div v-if="canCloseTicket" class="mt-3">
+  <BaseButton
+    variant="danger"
+    class="w-full flex items-center justify-center text-xs font-bold shadow-xs"
+    :loading="closeLoading"
+    @click="openCloseConfirm"
+  >
+    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+    </svg>
+    Cerrar Ticket
+  </BaseButton>
+</div>
+
+<div v-if="ticket.transferido" class="pt-2 mt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-purple-700 dark:text-purple-400">
+  <BaseBadge variant="purple">✔ Transferido</BaseBadge>
+  <span>Caso transferido anteriormente</span>
+</div>
           </div>
         </BaseCard>
 
         <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800/80 flex-1 flex flex-col min-h-0 overflow-hidden">
           <div class="px-6 py-4.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-900/30 shrink-0">
-            <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">Bitácora de Auditoría</h3>
+            <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-white">Bitácora de Auditoría</h3>
           </div>
           
-          <div v-if="auditoria.length === 0" class="text-center py-6 text-xs text-slate-400 dark:text-slate-550 font-semibold italic shrink-0">
+          <div v-if="auditoria.length === 0" class="text-center py-6 text-xs text-slate-400 dark:text-slate-400 font-semibold italic shrink-0">
             Sin registros de auditoría aún.
           </div>
           
@@ -135,14 +173,14 @@
                       </div>
                       <div class="flex-1 min-w-0 pt-1 flex justify-between space-x-4">
                         <div>
-                          <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                            Acción: <b class="text-slate-800 dark:text-slate-200 capitalize font-bold">{{ formatAuditAction(item.accion) }}</b> por <span class="font-bold text-slate-700 dark:text-slate-300">{{ item.usuarioNombre }}</span>
+                          <p class="text-xs font-semibold text-slate-500 dark:text-slate-300">
+                            Acción: <b class="text-slate-800 dark:text-white capitalize font-bold">{{ formatAuditAction(item.accion) }}</b> por <span class="font-bold text-slate-700 dark:text-white">{{ item.usuarioNombre }}</span>
                           </p>
-                          <p class="text-[10px] font-medium text-slate-400 dark:text-slate-500 mt-1">
+                          <p class="text-[10px] font-medium text-slate-400 dark:text-slate-400 mt-1">
                             {{ formatAuditDetails(item) }}
                           </p>
                         </div>
-                        <div class="text-right text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                        <div class="text-right text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 whitespace-nowrap">
                           {{ formatDate(item.fechaHora) }}
                         </div>
                       </div>
@@ -168,8 +206,8 @@
 
         <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800/80 flex flex-col flex-1 min-h-0 overflow-hidden">
           <div class="px-6 py-4.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-900/30 flex items-center justify-between shrink-0">
-            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-205 uppercase tracking-wider">Historial de Conversación</h3>
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-450 border border-emerald-100/60 dark:border-emerald-900/30 rounded-lg text-[10px] font-extrabold uppercase tracking-wider">
+            <h3 class="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Historial de Conversación</h3>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300 border border-emerald-100/60 dark:border-emerald-900/30 rounded-lg text-[10px] font-extrabold uppercase tracking-wider">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
               WhatsApp Activo
             </span>
@@ -186,13 +224,13 @@
                 class="max-w-[75%] rounded-2xl px-4 py-3 shadow-xs text-sm"
                 :class="msg.remitente === 'tecnico' 
                   ? 'bg-gradient-to-tr from-primary to-primary-hover text-white rounded-tr-none' 
-                  : 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/60 text-slate-800 dark:text-slate-100 rounded-tl-none'"
+                  : 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/60 text-slate-800 dark:text-white rounded-tl-none'"
               >
                 <div class="text-[9px] font-extrabold tracking-wider uppercase mb-1.5 opacity-75 flex items-center gap-1">
                   <span>{{ msg.remitente === 'tecnico' ? (msg.tecnicoNombre || 'Técnico') : (contacto?.nombre || 'Cliente') }}</span>
                 </div>
 
-                <p v-if="msg.contenido && (!msg.urlAdjunto || !msg.contenido.startsWith('[Archivo: '))" class="whitespace-pre-wrap leading-relaxed font-medium text-xs md:text-sm">{{ msg.contenido }}</p>
+                <p v-if="msg.contenido && (!msg.urlAdjunto || !msg.contenido.startsWith('[Archivo: '))" class="whitespace-pre-wrap break-words leading-relaxed font-medium text-xs md:text-sm">{{ msg.contenido }}</p>
 
                 <div v-if="msg.urlAdjunto" class="mt-2.5 pt-2 border-t" :class="msg.remitente === 'tecnico' ? 'border-white/15' : 'border-slate-100 dark:border-slate-700/70'">
                   
@@ -212,7 +250,7 @@
                       class="flex items-center gap-3.5 p-3 rounded-2xl border transition-all duration-200"
                       :class="msg.remitente === 'tecnico'
                         ? 'bg-white/10 border-white/20 text-white'
-                        : 'bg-slate-50 dark:bg-slate-850 border-slate-200/60 dark:border-slate-700/60 text-slate-700 dark:text-slate-300'"
+                        : 'bg-slate-50 dark:bg-slate-800 border-slate-200/60 dark:border-slate-700/60 text-slate-700 dark:text-white'"
                     >
                       <!-- Elemento de audio HTML5 invisible -->
                       <audio 
@@ -254,10 +292,10 @@
                           :class="msg.remitente === 'tecnico' ? 'bg-white/30 text-white' : 'bg-slate-200 dark:bg-slate-700 text-primary'"
                         />
                         <div class="flex justify-between items-center text-[9px] font-bold font-mono tracking-wider">
-                          <span :class="msg.remitente === 'tecnico' ? 'text-white/70' : 'text-slate-400 dark:text-slate-500'">
+                          <span :class="msg.remitente === 'tecnico' ? 'text-white/70' : 'text-slate-400 dark:text-slate-400'">
                             {{ formatAudioTime(msg._currentTime || 0) }}
                           </span>
-                          <span :class="msg.remitente === 'tecnico' ? 'text-white/70' : 'text-slate-400 dark:text-slate-500'">
+                          <span :class="msg.remitente === 'tecnico' ? 'text-white/70' : 'text-slate-400 dark:text-slate-400'">
                             {{ formatAudioTime(msg._duration || 0) }}
                           </span>
                         </div>
@@ -282,7 +320,7 @@
                       class="flex items-center gap-3 p-3 rounded-xl transition-all duration-200 border w-full max-w-[280px] shadow-xs hover:shadow-sm"
                       :class="msg.remitente === 'tecnico' 
                         ? 'bg-white/10 border-white/20 text-white hover:bg-white/15' 
-                        : 'bg-slate-55 dark:bg-slate-850 border-slate-200/70 dark:border-slate-700/70 text-slate-805 dark:text-slate-105 hover:bg-slate-100/80 dark:hover:bg-slate-800/80'"
+                        : 'bg-slate-50 dark:bg-slate-800 border-slate-200/70 dark:border-slate-700/70 text-slate-700 dark:text-white hover:bg-slate-100/80 dark:hover:bg-slate-700/80'"
                     >
                       <!-- Icono de documento -->
                       <div 
@@ -298,13 +336,13 @@
                       <div class="flex-1 min-w-0 text-left">
                         <p 
                           class="text-xs font-bold truncate"
-                          :class="msg.remitente === 'tecnico' ? 'text-white' : 'text-slate-800 dark:text-slate-200'"
+                          :class="msg.remitente === 'tecnico' ? 'text-white' : 'text-slate-800 dark:text-white'"
                         >
                           {{ msg.contenido && msg.contenido.startsWith('[Archivo: ') && msg.contenido.endsWith(']') ? msg.contenido.slice(10, -1) : msg.urlAdjunto.split('/').pop().replace(/^\d+-/, '') }}
                         </p>
                         <p 
                           class="text-[10px] font-semibold mt-0.5"
-                          :class="msg.remitente === 'tecnico' ? 'text-white/60' : 'text-slate-400 dark:text-slate-500'"
+                          :class="msg.remitente === 'tecnico' ? 'text-white/60' : 'text-slate-400 dark:text-slate-400'"
                         >
                           Haga clic para descargar
                         </p>
@@ -313,7 +351,7 @@
                       <!-- Botón de descarga -->
                       <div 
                         class="flex items-center justify-center w-7 h-7 rounded-full shrink-0 transition-colors"
-                        :class="msg.remitente === 'tecnico' ? 'text-white hover:bg-white/10' : 'text-slate-400 dark:text-slate-500 hover:text-primary dark:hover:text-primary hover:bg-slate-200/55 dark:hover:bg-slate-700/60'"
+                        :class="msg.remitente === 'tecnico' ? 'text-white hover:bg-white/10' : 'text-slate-400 dark:text-slate-400 hover:text-primary dark:hover:text-primary hover:bg-slate-200/55 dark:hover:bg-slate-700/60'"
                       >
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -323,7 +361,7 @@
                   </div>
                 </div>
 
-                <div class="text-[9px] text-right mt-1.5 font-bold uppercase tracking-wider" :class="msg.remitente === 'tecnico' ? 'text-white/60' : 'text-slate-400 dark:text-slate-500'">
+                <div class="text-[9px] text-right mt-1.5 font-bold uppercase tracking-wider" :class="msg.remitente === 'tecnico' ? 'text-white/60' : 'text-slate-400 dark:text-slate-400'">
                   {{ formatTime(msg.enviadoEn) }}
                 </div>
               </div>
@@ -333,16 +371,16 @@
           <div class="p-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
             <div v-if="selectedFile" class="mb-3.5 p-2 bg-slate-50 dark:bg-slate-800/40 border border-slate-150 dark:border-slate-700/60 rounded-xl flex items-center justify-between">
               <div class="flex items-center gap-2 overflow-hidden mr-2">
-                <svg class="w-4.5 h-4.5 text-slate-405 dark:text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
-                <span class="text-xs text-slate-700 dark:text-slate-300 truncate font-semibold">{{ selectedFile.name }}</span>
-                <span class="text-[10px] text-slate-400 font-mono">({{ formatBytes(selectedFile.size) }})</span>
+                <svg class="w-4.5 h-4.5 text-slate-405 dark:text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                <span class="text-xs text-slate-700 dark:text-white truncate font-semibold">{{ selectedFile.name }}</span>
+                <span class="text-[10px] text-slate-400 dark:text-slate-400 font-mono">({{ formatBytes(selectedFile.size) }})</span>
               </div>
               <button @click="clearSelectedFile" class="text-slate-400 hover:text-danger p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full cursor-pointer">
                 <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
 
-            <form @submit.prevent="handleSendMessage().then(() => { setTimeout(() => fetchTicketDetails(), 300) })" class="flex gap-2">
+            <form @submit.prevent="handleSendMessage().then(() => { setTimeout(() => fetchTicketDetails(), 300); resetInputHeight(); })" class="flex items-end gap-2">
               <input
                 type="file"
                 ref="fileInput"
@@ -354,24 +392,28 @@
               <button
                 type="button"
                 @click="triggerFileSelect"
-                class="inline-flex items-center justify-center p-3 rounded-xl border border-slate-200/80 dark:border-slate-700/60 text-slate-400 hover:text-primary dark:hover:text-primary hover:border-primary/30 dark:hover:border-primary/30 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-200 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                class="inline-flex items-center justify-center p-3 rounded-xl border border-slate-200/80 dark:border-slate-700/60 text-slate-400 hover:text-primary dark:hover:text-primary hover:border-primary/30 dark:hover:border-primary/30 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-200 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer mb-[1px]"
                 :disabled="isReadOnly"
                 title="Adjuntar archivo"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
               </button>
               
-              <input
+              <textarea
                 v-model="messageText"
+                @input="autoResizeInput"
+                @keydown.enter.prevent="if (!isReadOnly && (messageText.trim() || selectedFile) && !sendLoading) { handleSendMessage().then(() => { setTimeout(() => fetchTicketDetails(), 300); resetInputHeight(); }) }"
                 placeholder="Escribe tu mensaje aquí..."
-                class="flex-1 px-4.5 py-2.5 bg-slate-50 dark:bg-slate-800/40 border border-slate-250/70 dark:border-slate-700/60 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-slate-105 transition-all duration-200 placeholder-slate-400 dark:placeholder-slate-500 disabled:opacity-50"
+                rows="1"
+                style="resize: none; max-height: 120px;"
+                class="flex-1 px-4.5 py-2.5 bg-slate-50 dark:bg-slate-800/40 border border-slate-250/70 dark:border-slate-700/60 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-white transition-all duration-200 placeholder-slate-400 dark:placeholder-slate-500 disabled:opacity-50 min-h-[40px] align-bottom"
                 :disabled="isReadOnly || sendLoading"
-              />
+              ></textarea>
 
               <BaseButton
                 type="submit"
                 variant="primary"
-                class="!px-6 shrink-0 shadow-md shadow-primary/20"
+                class="!px-6 shrink-0 shadow-md shadow-primary/20 h-[42px]"
                 :loading="sendLoading"
                 :disabled="isReadOnly || (!messageText.trim() && !selectedFile)"
               >
@@ -383,13 +425,24 @@
       </div>
     </div>
 
-    <div v-if="lightboxUrl" class="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4" @click="lightboxUrl = null">
-      <img :src="lightboxUrl" class="max-w-full max-h-full rounded-lg shadow-2xl animate-scaleIn" alt="Imagen ampliada" />
-      <button class="absolute top-4 right-4 text-white hover:text-gray-300">
-        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-      </button>
-    </div>
+      <div v-if="lightboxUrl" class="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4" @click="lightboxUrl = null">
+    <img :src="lightboxUrl" class="max-w-full max-h-full rounded-lg shadow-2xl animate-scaleIn" alt="Imagen ampliada" />
+    <button class="absolute top-4 right-4 text-white hover:text-gray-300">
+      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+    </button>
   </div>
+
+  <!-- Diálogo de confirmación para cerrar ticket -->
+  <ConfirmDialog
+    v-model="showCloseConfirm"
+    title="¿Cerrar este ticket?"
+    message="Al cerrar el ticket, no se podrán enviar más mensajes ni realizar modificaciones. Esta acción quedará registrada en la auditoría."
+    confirm-text="Sí, cerrar ticket"
+    cancel-text="Cancelar"
+    variant="danger"
+    @confirm="handleConfirmClose"
+  />
+</div>
 </template>
 
 <script setup>
@@ -400,6 +453,23 @@ import api from '@/services/api'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseBadge from '@/components/base/BaseBadge.vue'
+import BaseDropdown from '@/components/base/BaseDropdown.vue'
+import ConfirmDialog from '@/components/base/ConfirmDialog.vue'
+import { changeStatus, closeTicket } from '@/services/ticketService'
+
+const autoResizeInput = (event) => {
+  const element = event.target;
+  element.style.height = 'auto';
+  element.style.height = element.scrollHeight + 'px';
+};
+
+const resetInputHeight = () => {
+  // Busca el elemento textarea para devolverlo a su estado original tras el envío
+  const textarea = document.querySelector('textarea[placeholder="Escribe tu mensaje aquí..."]');
+  if (textarea) {
+    textarea.style.height = 'auto';
+  }
+};
 
 const route = useRoute()
 const authStore = useAuthStore()
@@ -426,6 +496,60 @@ const chatContainer = ref(null)
 
 // Lightbox
 const lightboxUrl = ref(null)
+
+// Estado y Cierre (Sprint 2 - Fase 2)
+const selectedStatus = ref(null)
+const showCloseConfirm = ref(false)
+const statusLoading = ref(false)
+const closeLoading = ref(false)
+
+// Transiciones válidas según el estado actual (según backend)
+const STATUS_TRANSITIONS = {
+  'nuevo': [],
+  'asignado': ['esperando', 'resuelto'],
+  'esperando': ['asignado', 'resuelto'],
+  'resuelto': ['cerrado'],
+  'cerrado': []
+}
+
+const STATUS_LABELS = {
+  'nuevo': 'Nuevo',
+  'asignado': 'Asignado',
+  'esperando': 'Esperando respuesta',
+  'resuelto': 'Resuelto',
+  'cerrado': 'Cerrado'
+}
+
+// Computed: ¿Es el usuario actual el propietario del ticket?
+const isOwner = computed(() => {
+  if (!ticket.value) return false
+  return ticket.value.tecnicoAsignadoId === authStore.user?.id
+})
+
+// Computed: Opciones disponibles para el dropdown de estado
+const availableStatusOptions = computed(() => {
+  if (!ticket.value) return []
+  const estadoActual = ticket.value.estado
+  const transiciones = STATUS_TRANSITIONS[estadoActual] || []
+  return transiciones.map(estado => ({
+    value: estado,
+    label: STATUS_LABELS[estado] || estado
+  }))
+})
+
+// Computed: ¿Se puede cambiar el estado? (propietario + no cerrado + hay transiciones)
+const canChangeStatus = computed(() => {
+  return isOwner.value 
+    && ticket.value?.estado !== 'cerrado' 
+    && availableStatusOptions.value.length > 0
+})
+
+// Computed: ¿Se puede cerrar el ticket?
+const canCloseTicket = computed(() => {
+  if (!ticket.value) return false
+  const estado = ticket.value.estado
+  return isOwner.value && ['asignado', 'esperando', 'resuelto'].includes(estado)
+})
 
 // Check mode Solo Lectura (Read Only)
 // Si el ticket no es nuevo y el usuario actual no es el asignado ni supervisor
@@ -480,9 +604,71 @@ const handleTakeCase = async () => {
   }
 
   const handleTransferCase = () => {
-    // Lógica provisional para conectar en el Sprint 2
-    alert('Funcionalidad de transferencia de técnico en desarrollo.');
+  // Lógica provisional para conectar en el Sprint 2
+  alert('Funcionalidad de transferencia de técnico en desarrollo.');
+}
+
+// ============================================================
+// SPRINT 2 - FASE 2: Cambio de estado y cierre
+// ============================================================
+
+/**
+ * Cambiar el estado del ticket
+ */
+const handleChangeStatus = async (nuevoEstado) => {
+  if (!ticket.value || !nuevoEstado) return
+  if (!canChangeStatus.value) return
+  
+  statusLoading.value = true
+  try {
+    const response = await changeStatus(ticket.value.id, nuevoEstado)
+    if (response.success) {
+      // Recargar detalles del ticket
+      await fetchTicketDetails()
+      // Resetear el dropdown
+      selectedStatus.value = null
+    } else {
+      alert(response.error || 'Error al cambiar el estado')
+    }
+  } catch (error) {
+    console.error('Error changing status:', error)
+    alert(error.response?.data?.error || 'Error al conectar con el servidor')
+  } finally {
+    statusLoading.value = false
   }
+}
+
+/**
+ * Abrir diálogo de confirmación para cerrar ticket
+ */
+const openCloseConfirm = () => {
+  if (!canCloseTicket.value) return
+  showCloseConfirm.value = true
+}
+
+/**
+ * Confirmar y ejecutar el cierre del ticket
+ */
+const handleConfirmClose = async () => {
+  if (!ticket.value) return
+  
+  closeLoading.value = true
+  try {
+    const response = await closeTicket(ticket.value.id)
+    if (response.success) {
+      // Recargar detalles del ticket
+      await fetchTicketDetails()
+    } else {
+      alert(response.error || 'Error al cerrar el ticket')
+    }
+  } catch (error) {
+    console.error('Error closing ticket:', error)
+    alert(error.response?.data?.error || 'Error al conectar con el servidor')
+  } finally {
+    closeLoading.value = false
+    showCloseConfirm.value = false
+  }
+}
 
 // File Select handlers
 const triggerFileSelect = () => {
