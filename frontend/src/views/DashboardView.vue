@@ -1,8 +1,8 @@
 <template>
   <div class="animate-fadeIn">
     <div class="mb-6">
-      <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
-      <p class="text-gray-600 mt-1">Estadísticas y métricas del sistema</p>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+      <p class="text-gray-600 dark:text-slate-400 mt-1">Estadísticas y métricas del sistema</p>
     </div>
 
     <!-- Métricas Principales -->
@@ -15,8 +15,8 @@
             </svg>
           </div>
           <div class="ml-4">
-            <p class="text-sm font-medium text-gray-500">Tickets Hoy</p>
-            <p class="text-2xl font-semibold text-gray-900">24</p>
+            <p class="text-sm font-medium text-gray-500 dark:text-slate-400">Tickets Hoy</p>
+            <p class="text-2xl font-semibold text-gray-900 dark:text-white">24</p>
           </div>
         </div>
       </BaseCard>

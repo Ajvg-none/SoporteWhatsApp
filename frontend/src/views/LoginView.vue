@@ -1,7 +1,7 @@
 <template>
   <div>
-    <h2 class="text-xl font-black text-slate-800 text-center tracking-tight">Acceso Técnico</h2>
-    <p class="text-slate-400 text-xs text-center mb-6 font-semibold">Introduce tus credenciales para ingresar al panel</p>
+    <h2 class="text-xl font-black text-slate-800 dark:text-white text-center tracking-tight">Acceso Técnico</h2>
+    <p class="text-slate-400 dark:text-slate-300 text-xs text-center mb-6 font-semibold">Introduce tus credenciales para ingresar al panel</p>
     
     <!-- Alerta de Error -->
     <div v-if="errorMsg" class="mb-5 p-3.5 rounded-xl bg-rose-50 border border-rose-150 text-rose-800 text-xs font-semibold flex items-start">
@@ -39,7 +39,7 @@
       </BaseButton>
     </form>
 
-    <p class="mt-6 text-center text-xs font-semibold text-slate-400">
+    <p class="mt-6 text-center text-xs font-semibold text-slate-400 dark:text-slate-300">
       ¿Problemas para acceder? Contacta al administrador
     </p>
   </div>
