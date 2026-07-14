@@ -4,6 +4,13 @@ const userController = require('../controllers/userController');
 const { verifyToken, checkSupervisorRole } = require('../middlewares/auth');
 
 /**
+ * GET /api/users/tecnicos
+ * Listar todos los técnicos (cualquier usuario autenticado)
+ * ✅ Requiere: verifyToken (NO requiere supervisor)
+ */
+router.get('/tecnicos', verifyToken, userController.getTechnicians);
+
+/**
  * GET /api/users
  * Listar todos los usuarios
  * ✅ Requiere: verifyToken + checkSupervisorRole

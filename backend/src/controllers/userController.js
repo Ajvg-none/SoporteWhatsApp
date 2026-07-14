@@ -20,13 +20,45 @@ exports.getUsers = async (req, res) => {
         nombre: 'asc'
       }
     });
-
     res.json({
       success: true,
       data: users
     });
   } catch (error) {
     console.error('❌ Error en getUsers:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error interno del servidor'
+    });
+  }
+};
+
+/**
+ * GET /api/users/tecnicos
+ * Listar todos los técnicos (cualquier usuario autenticado)
+ * ✅ Requiere: verifyToken (NO requiere supervisor)
+ */
+exports.getTechnicians = async (req, res) => {
+  try {
+    const technicians = await prisma.usuario.findMany({
+      where: {
+        rol: 'tecnico'
+      },
+      select: {
+        id: true,
+        nombre: true,
+        email: true
+      },
+      orderBy: {
+        nombre: 'asc'
+      }
+    });
+    res.json({
+      success: true,
+      data: technicians
+    });
+  } catch (error) {
+    console.error(' Error en getTechnicians:', error);
     res.status(500).json({
       success: false,
       error: 'Error interno del servidor'
@@ -43,7 +75,7 @@ exports.getUsers = async (req, res) => {
 exports.createUser = async (req, res) => {
   try {
     const { nombre, email, password, rol } = req.body;
-
+    
     // 1. Validar campos obligatorios
     if (!nombre || !email || !password) {
       return res.status(400).json({
@@ -56,7 +88,6 @@ exports.createUser = async (req, res) => {
     const existingUser = await prisma.usuario.findUnique({
       where: { email }
     });
-
     if (existingUser) {
       return res.status(409).json({
         success: false,
@@ -94,7 +125,6 @@ exports.createUser = async (req, res) => {
       message: `Usuario ${userRol} creado exitosamente`,
       data: newUser
     });
-
   } catch (error) {
     console.error('❌ Error en createUser:', error);
     res.status(500).json({
@@ -127,7 +157,6 @@ exports.deleteUser = async (req, res) => {
     const user = await prisma.usuario.findUnique({
       where: { id: userId }
     });
-
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -148,7 +177,6 @@ exports.deleteUser = async (req, res) => {
       const supervisorCount = await prisma.usuario.count({
         where: { rol: 'supervisor' }
       });
-
       if (supervisorCount <= 1) {
         return res.status(400).json({
           success: false,
@@ -161,7 +189,6 @@ exports.deleteUser = async (req, res) => {
     const ticketsAsignados = await prisma.ticket.count({
       where: { tecnicoAsignadoId: userId }
     });
-
     if (ticketsAsignados > 0) {
       return res.status(400).json({
         success: false,
@@ -179,7 +206,6 @@ exports.deleteUser = async (req, res) => {
       success: true,
       message: `Usuario ${user.nombre} eliminado correctamente`
     });
-
   } catch (error) {
     console.error('❌ Error en deleteUser:', error);
     res.status(500).json({

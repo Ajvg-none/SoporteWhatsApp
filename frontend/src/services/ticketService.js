@@ -68,13 +68,12 @@ export async function forceAssign(ticketId, destinoTecnicoId) {
 }
 
 /**
- * Obtener lista de técnicos (para modales de transferencia/reasignación)
- * @returns {Promise} Lista de técnicos
- */
+* Obtener lista de técnicos (para modales de transferencia/reasignación)
+* Usa el endpoint /api/users y filtra solo los técnicos
+* @returns {Promise} Lista de técnicos
+*/
 export async function getTechnicians() {
-  // NOTA: Este endpoint debe existir en el backend
-  // Si no existe, hay que crearlo o usar /api/usuarios filtrado
-  const response = await api.get('/usuarios')
+  const response = await api.get('/users/tecnicos')
   return response.data
 }
 
