@@ -5,53 +5,69 @@ const prisma = new PrismaClient();
  * GET /api/stats/dashboard
  * Estadísticas para el dashboard (solo supervisores)
  * Query params: periodo (hoy, semana, mes)
- * ✅ S3-B02
+ * 
+ * Devuelve:
+ *   - stats: { totalTickets, ticketsAbiertos, ticketsCerrados, tiempoPromedioRespuesta }
+ *   - evolucion: [{ fecha, nuevos, cerrados }]
+ *   - porTecnico: [{ nombre, total }]
+ *   - porEstado: { nuevo, asignado, esperando, resuelto, cerrado }
  */
 exports.getDashboardStats = async (req, res) => {
   try {
     const { periodo = 'hoy' } = req.query;
+    const { fechaInicio, fechaFin } = calcularRangoFechas(periodo);
 
-    // 1. Calcular fechas según el período
-    const fechas = calcularRangoFechas(periodo);
-    
-    // 2. Obtener todas las estadísticas en paralelo
-    const [
-      ticketsIngresados,
-      ticketsResueltos,
-      ticketsAbiertos,
-      tiempoPrimeraRespuesta,
-      tiempoResolucion,
-      ticketsPorTecnico,
-      incidenciasPorSucursal,
-      mensajesPorDia
-    ] = await Promise.all([
-      obtenerTicketsIngresados(fechas),
-      obtenerTicketsResueltos(fechas),
-      obtenerTicketsAbiertos(),
-      calcularTiempoPrimeraRespuesta(fechas),
-      calcularTiempoResolucion(fechas),
-      obtenerTicketsPorTecnico(fechas),
-      obtenerIncidenciasPorSucursal(fechas),
-      obtenerMensajesPorDia(fechas)
-    ]);
+    // 1. Tickets totales creados en el período
+    const totalTickets = await prisma.ticket.count({
+      where: {
+        creadoEn: {
+          gte: fechaInicio,
+          lte: fechaFin
+        }
+      }
+    });
 
-    // 3. Respuesta
+    // 2. Tickets abiertos actualmente (no cerrados)
+    const ticketsAbiertos = await prisma.ticket.count({
+      where: {
+        estado: {
+          not: 'cerrado'
+        }
+      }
+    });
+
+    // 3. Tickets cerrados actualmente
+    const ticketsCerrados = await prisma.ticket.count({
+      where: {
+        estado: 'cerrado'
+      }
+    });
+
+    // 4. Tiempo promedio de primera respuesta (en minutos)
+    const tiempoPromedioRespuesta = await calcularTiempoPrimeraRespuesta(fechaInicio, fechaFin);
+
+    // 5. Evolución diaria (nuevos y cerrados en el período)
+    const evolucion = await obtenerEvolucionDiaria(fechaInicio, fechaFin);
+
+    // 6. Tickets por técnico (atendidos en el período)
+    const porTecnico = await obtenerTicketsPorTecnico(fechaInicio, fechaFin);
+
+    // 7. Distribución por estado actual
+    const porEstado = await obtenerDistribucionPorEstado();
+
+    // Respuesta exitosa
     res.json({
       success: true,
       data: {
-        periodo,
-        resumen: {
-          tickets_ingresados: ticketsIngresados,
-          tickets_resueltos: ticketsResueltos,
-          tickets_abiertos: ticketsAbiertos
+        stats: {
+          totalTickets,
+          ticketsAbiertos,
+          ticketsCerrados,
+          tiempoPromedioRespuesta
         },
-        tiempos: {
-          tiempo_promedio_primera_respuesta: tiempoPrimeraRespuesta,
-          tiempo_promedio_resolucion: tiempoResolucion
-        },
-        tickets_por_tecnico: ticketsPorTecnico,
-        incidencias_por_sucursal: incidenciasPorSucursal,
-        mensajes_por_dia: mensajesPorDia
+        evolucion,
+        porTecnico,
+        porEstado
       }
     });
 
@@ -93,65 +109,18 @@ function calcularRangoFechas(periodo) {
       fechaInicio = hoy;
   }
   
-  return { fechaInicio, fechaFin: hoy };
+  // Asegurar que fechaFin sea el final del día de hoy
+  const fechaFin = new Date(hoy);
+  fechaFin.setHours(23, 59, 59, 999);
+  
+  return { fechaInicio, fechaFin };
 }
 
 /**
- * Obtiene tickets ingresados en el período
+ * Calcula el tiempo promedio de primera respuesta (en minutos)
+ * (desde creación del ticket hasta el primer mensaje del técnico)
  */
-async function obtenerTicketsIngresados({ fechaInicio, fechaFin }) {
-  const count = await prisma.ticket.count({
-    where: {
-      creadoEn: {
-        gte: fechaInicio,
-        lte: fechaFin
-      }
-    }
-  });
-  return count;
-}
-
-/**
- * Obtiene tickets resueltos en el período
- * (tickets que pasaron a estado 'resuelto' o 'cerrado')
- */
-async function obtenerTicketsResueltos({ fechaInicio, fechaFin }) {
-  const count = await prisma.auditoria.count({
-    where: {
-      accion: 'cambio_estado',
-      fechaHora: {
-        gte: fechaInicio,
-        lte: fechaFin
-      },
-      detalle: {
-        path: ['estado_nuevo'],
-        equals: 'resuelto'
-      }
-    }
-  });
-  return count;
-}
-
-/**
- * Obtiene tickets abiertos actualmente
- * (estados: nuevo, asignado, esperando)
- */
-async function obtenerTicketsAbiertos() {
-  const count = await prisma.ticket.count({
-    where: {
-      estado: {
-        in: ['nuevo', 'asignado', 'esperando']
-      }
-    }
-  });
-  return count;
-}
-
-/**
- * Calcula el tiempo promedio de primera respuesta
- * (desde creación hasta el primer mensaje del técnico)
- */
-async function calcularTiempoPrimeraRespuesta({ fechaInicio, fechaFin }) {
+async function calcularTiempoPrimeraRespuesta(fechaInicio, fechaFin) {
   // Buscar tickets creados en el período que tengan al menos un mensaje de técnico
   const tickets = await prisma.ticket.findMany({
     where: {
@@ -204,56 +173,33 @@ async function calcularTiempoPrimeraRespuesta({ fechaInicio, fechaFin }) {
 }
 
 /**
- * Calcula el tiempo promedio de resolución
- * (desde creación hasta que pasa a 'resuelto' o 'cerrado')
+ * Obtiene la evolución diaria de tickets nuevos y cerrados
  */
-async function calcularTiempoResolucion({ fechaInicio, fechaFin }) {
-  // Buscar auditorías de cambio a 'resuelto' en el período
-  const auditorias = await prisma.auditoria.findMany({
-    where: {
-      accion: 'cambio_estado',
-      fechaHora: {
-        gte: fechaInicio,
-        lte: fechaFin
-      },
-      detalle: {
-        path: ['estado_nuevo'],
-        equals: 'resuelto'
-      }
-    },
-    include: {
-      ticket: true
-    }
-  });
+async function obtenerEvolucionDiaria(fechaInicio, fechaFin) {
+  // Usamos $queryRaw para agrupar por fecha (PostgreSQL)
+  const resultados = await prisma.$queryRaw`
+    SELECT
+      DATE(creado_en) as fecha,
+      COUNT(*) as total_creados,
+      COUNT(CASE WHEN estado = 'cerrado' THEN 1 END) as cerrados
+    FROM tickets
+    WHERE creado_en >= ${fechaInicio} AND creado_en <= ${fechaFin}
+    GROUP BY DATE(creado_en)
+    ORDER BY fecha ASC
+  `;
 
-  if (auditorias.length === 0) {
-    return null;
-  }
-
-  let totalTiempo = 0;
-  let count = 0;
-
-  for (const auditoria of auditorias) {
-    if (auditoria.ticket?.creadoEn && auditoria.fechaHora) {
-      const tiempo = auditoria.fechaHora.getTime() - auditoria.ticket.creadoEn.getTime();
-      totalTiempo += tiempo;
-      count++;
-    }
-  }
-
-  if (count === 0) {
-    return null;
-  }
-
-  // Promedio en minutos
-  const promedioMs = totalTiempo / count;
-  return Math.round(promedioMs / (1000 * 60));
+  // Transformar a formato esperado
+  return resultados.map(r => ({
+    fecha: r.fecha.toISOString().split('T')[0],
+    nuevos: Number(r.total_creados) - Number(r.cerrados), // asumimos que los no cerrados son "nuevos" en ese día
+    cerrados: Number(r.cerrados)
+  }));
 }
 
 /**
  * Obtiene tickets atendidos por cada técnico en el período
  */
-async function obtenerTicketsPorTecnico({ fechaInicio, fechaFin }) {
+async function obtenerTicketsPorTecnico(fechaInicio, fechaFin) {
   // Obtener todos los técnicos
   const tecnicos = await prisma.usuario.findMany({
     where: { rol: 'tecnico' },
@@ -268,7 +214,6 @@ async function obtenerTicketsPorTecnico({ fechaInicio, fechaFin }) {
 
   for (const tecnico of tecnicos) {
     // Contar tickets asignados a este técnico en el período
-    // Buscar en auditoría asignaciones o en tickets creados con asignación directa
     const count = await prisma.ticket.count({
       where: {
         tecnicoAsignadoId: tecnico.id,
@@ -279,8 +224,7 @@ async function obtenerTicketsPorTecnico({ fechaInicio, fechaFin }) {
       }
     });
 
-    // También contar tickets que fueron asignados a este técnico en el período
-    // (para capturar transferencias)
+    // También contar asignaciones mediante auditoría (para transferencias)
     const asignaciones = await prisma.auditoria.count({
       where: {
         accion: 'asignacion',
@@ -293,9 +237,7 @@ async function obtenerTicketsPorTecnico({ fechaInicio, fechaFin }) {
     });
 
     resultado.push({
-      tecnico_id: tecnico.id,
       nombre: tecnico.nombre,
-      email: tecnico.email,
       total: count + asignaciones
     });
   }
@@ -307,92 +249,18 @@ async function obtenerTicketsPorTecnico({ fechaInicio, fechaFin }) {
 }
 
 /**
- * Obtiene incidencias por sucursal
+ * Obtiene la distribución actual de tickets por estado
  */
-async function obtenerIncidenciasPorSucursal({ fechaInicio, fechaFin }) {
-  // Agrupar tickets por sucursal del contacto
-  const tickets = await prisma.ticket.findMany({
-    where: {
-      creadoEn: {
-        gte: fechaInicio,
-        lte: fechaFin
-      },
-      contacto: {
-        sucursal: {
-          not: null
-        }
-      }
-    },
-    include: {
-      contacto: {
-        select: {
-          sucursal: true
-        }
-      }
-    }
-  });
-
-  // Agrupar por sucursal
-  const agrupado = {};
-  for (const ticket of tickets) {
-    const sucursal = ticket.contacto?.sucursal || 'Sin sucursal';
-    agrupado[sucursal] = (agrupado[sucursal] || 0) + 1;
-  }
-
-  // Convertir a array y ordenar
-  const resultado = Object.entries(agrupado).map(([sucursal, total]) => ({
-    sucursal,
-    total
-  }));
-
-  resultado.sort((a, b) => b.total - a.total);
+async function obtenerDistribucionPorEstado() {
+  const estados = ['nuevo', 'asignado', 'esperando', 'resuelto', 'cerrado'];
+  const counts = await Promise.all(
+    estados.map(estado =>
+      prisma.ticket.count({
+        where: { estado }
+      })
+    )
+  );
   
-  return resultado;
-}
-
-/**
- * Obtiene mensajes recibidos y enviados por día
- */
-async function obtenerMensajesPorDia({ fechaInicio, fechaFin }) {
-  // Obtener mensajes agrupados por día
-  const mensajes = await prisma.$queryRaw`
-    SELECT 
-      DATE(enviado_en) as dia,
-      remitente,
-      COUNT(*) as total
-    FROM mensajes
-    WHERE enviado_en >= ${fechaInicio} 
-      AND enviado_en <= ${fechaFin}
-    GROUP BY DATE(enviado_en), remitente
-    ORDER BY dia ASC
-  `;
-
-  // Procesar resultados
-  const resultado = {};
-  const dias = new Set();
-
-  // Primero, identificar todos los días
-  for (const row of mensajes) {
-    const dia = row.dia.toISOString().split('T')[0];
-    dias.add(dia);
-    if (!resultado[dia]) {
-      resultado[dia] = { fecha: dia, recibidos: 0, enviados: 0 };
-    }
-  }
-
-  // Luego, asignar los conteos
-  for (const row of mensajes) {
-    const dia = row.dia.toISOString().split('T')[0];
-    if (row.remitente === 'cliente') {
-      resultado[dia].recibidos = parseInt(row.total);
-    } else if (row.remitente === 'tecnico') {
-      resultado[dia].enviados = parseInt(row.total);
-    }
-  }
-
-  // Convertir a array ordenado
-  const resultadoArray = Object.values(resultado);
-  resultadoArray.sort((a, b) => a.fecha.localeCompare(b.fecha));
-
-  return resultadoArray;
+  // Convertir a objeto con nombres de estado como keys
+  return Object.fromEntries(estados.map((estado, i) => [estado, counts[i]]));
 }

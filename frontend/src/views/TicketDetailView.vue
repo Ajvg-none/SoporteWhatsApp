@@ -96,16 +96,26 @@
           
           <div class="space-y-4">
             <div>
-              <label class="text-[10px] text-slate-400 dark:text-slate-400 font-bold uppercase tracking-wider">Técnico Asignado</label>
-              <div class="flex items-center gap-2 mt-1.5">
-                <span class="w-2 h-2 rounded-full animate-pulse" :class="ticket.tecnicoAsignadoId ? 'bg-sky-500' : 'bg-slate-300 dark:bg-slate-700'"></span>
-                <span class="text-xs font-bold text-slate-700 dark:text-white">
-                  {{ tecnicoAsignado?.nombre || 'Sin asignar' }}
-                </span>
-              </div>
-            </div>
-
-            <div v-if="ticket.estado === 'nuevo'">
+          <label class="text-[10px] text-slate-400 dark:text-slate-400 font-bold uppercase tracking-wider">Técnico Asignado</label>
+          <div class="flex items-center gap-2 mt-1.5">
+            <span class="w-2 h-2 rounded-full animate-pulse" :class="ticket.tecnicoAsignadoId ? 'bg-sky-500' : 'bg-slate-300 dark:bg-slate-700'"></span>
+            <span class="text-xs font-bold text-slate-700 dark:text-white">
+              {{ tecnicoAsignado?.nombre || 'Sin asignar' }}
+            </span>
+          </div>
+          <!-- Badge: Transferencia pendiente (si existe solicitud) -->
+          <div v-if="ticket.solicitudTransferenciaTecnicoId" class="mt-2 flex items-center gap-2">
+            <BaseBadge variant="yellow">
+              <span class="flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Transf. Pendiente
+              </span>
+            </BaseBadge>
+          </div>
+        </div>
+        <div v-if="ticket.estado === 'nuevo'">
               <BaseButton
                 variant="primary"
                 class="w-full flex items-center justify-center shadow-md shadow-primary/20"
@@ -118,15 +128,18 @@
             </div>
 
             <div v-else-if="!isReadOnly && ticket.estado !== 'cerrado'" class="mt-3">
-  <BaseButton
-    variant="secondary"
-    class="w-full flex items-center justify-center border-slate-200/80 dark:border-slate-700/60 cursor-pointer text-xs font-bold shadow-xs"
-    @click="handleTransferCase"
-  >
-    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
-    Transferir Ticket
-  </BaseButton>
-</div>
+              <BaseTooltip :text="!canRequestTransfer ? transferDisabledTooltip : ''" position="top">
+                <BaseButton
+                  variant="secondary"
+                  class="w-full flex items-center justify-center border-slate-200/80 dark:border-slate-700/60 cursor-pointer text-xs font-bold shadow-xs"
+                  :disabled="!canRequestTransfer"
+                  @click="handleTransferCase"
+                >
+                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+                  Transferir Ticket
+                </BaseButton>
+              </BaseTooltip>
+            </div>
 
 <!-- Botón Cerrar Ticket (solo propietario + estados permitidos) -->
 <div v-if="canCloseTicket" class="mt-3">
@@ -195,16 +208,59 @@
 
       <div class="flex flex-col gap-6 lg:col-span-2 h-full min-h-0 overflow-hidden">
         <div v-if="isReadOnly" class="p-4 bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 rounded-2xl flex items-start gap-3.5 text-amber-900 dark:text-amber-300 text-sm shrink-0">
-          <svg class="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-          <div>
-            <p class="font-bold text-xs tracking-wide uppercase text-amber-850 dark:text-amber-400">Modo Solo Lectura</p>
-            <p class="text-xs text-amber-705 dark:text-amber-450 mt-1 font-semibold leading-relaxed">
-              Este ticket está siendo atendido por <b>{{ tecnicoAsignado?.nombre || 'otro técnico' }}</b>. Solo el técnico asignado puede enviar mensajes o realizar modificaciones.
-            </p>
-          </div>
-        </div>
+<svg class="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+<div>
+  <p class="font-bold text-xs tracking-wide uppercase text-amber-850 dark:text-amber-400">Modo Solo Lectura</p>
+  <p class="text-xs text-amber-705 dark:text-amber-450 mt-1 font-semibold leading-relaxed">
+    Este ticket está siendo atendido por <b>{{ tecnicoAsignado?.nombre || 'otro técnico' }}</b>. Solo el técnico asignado puede enviar mensajes o realizar modificaciones.
+  </p>
+</div>
+</div>
 
-        <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800/80 flex flex-col flex-1 min-h-0 overflow-hidden">
+<!-- Banner: Solicitud de transferencia pendiente (solo si eres el destino) -->
+<div v-if="isTransferDestination" class="p-4 bg-purple-50/70 dark:bg-purple-950/20 border border-purple-200/60 dark:border-purple-900/40 rounded-2xl shrink-0">
+<div class="flex items-start gap-3.5">
+  <div class="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center shrink-0">
+    <svg class="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+    </svg>
+  </div>
+  <div class="flex-1 min-w-0">
+    <p class="font-bold text-xs tracking-wide uppercase text-purple-800 dark:text-purple-400">
+      Solicitud de Transferencia
+    </p>
+    <p class="text-xs text-purple-700 dark:text-purple-300 mt-1 font-semibold leading-relaxed">
+      <b>{{ transferRequestFromName }}</b> quiere transferirte este ticket. ¿Aceptas?
+    </p>
+    <div class="flex gap-2 mt-3">
+      <BaseButton
+        variant="primary"
+        class="!py-2 !px-4 text-xs font-bold"
+        :loading="acceptLoading"
+        @click="handleAcceptTransfer"
+      >
+        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        Aceptar
+      </BaseButton>
+      <BaseButton
+        variant="danger"
+        class="!py-2 !px-4 text-xs font-bold"
+        :loading="rejectLoading"
+        @click="openRejectConfirm"
+      >
+        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+        Rechazar
+      </BaseButton>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800/80 flex flex-col flex-1 min-h-0 overflow-hidden">
           <div class="px-6 py-4.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-900/30 flex items-center justify-between shrink-0">
             <h3 class="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Historial de Conversación</h3>
             <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300 border border-emerald-100/60 dark:border-emerald-900/30 rounded-lg text-[10px] font-extrabold uppercase tracking-wider">
@@ -432,16 +488,114 @@
     </button>
   </div>
 
-  <!-- Diálogo de confirmación para cerrar ticket -->
-  <ConfirmDialog
-    v-model="showCloseConfirm"
-    title="¿Cerrar este ticket?"
-    message="Al cerrar el ticket, no se podrán enviar más mensajes ni realizar modificaciones. Esta acción quedará registrada en la auditoría."
-    confirm-text="Sí, cerrar ticket"
-    cancel-text="Cancelar"
-    variant="danger"
-    @confirm="handleConfirmClose"
-  />
+ <!-- Diálogo de confirmación para cerrar ticket -->
+<ConfirmDialog
+v-model="showCloseConfirm"
+title="¿Cerrar este ticket?"
+message="Al cerrar el ticket, no se podrán enviar más mensajes ni realizar modificaciones. Esta acción quedará registrada en la auditoría."
+confirm-text="Sí, cerrar ticket"
+cancel-text="Cancelar"
+variant="danger"
+@confirm="handleConfirmClose"
+/>
+
+<!-- Modal de Solicitud de Transferencia -->
+<BaseModal
+v-model="showTransferModal"
+title="Solicitar Transferencia"
+size="md"
+>
+<div class="space-y-4">
+  <p class="text-sm text-slate-600 dark:text-slate-400">
+    Selecciona el técnico al que deseas transferir este ticket. El técnico destino recibirá una notificación y podrá aceptar o rechazar la solicitud.
+  </p>
+
+  <!-- Buscador -->
+  <div class="relative">
+    <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+    </span>
+    <input
+      v-model="technicianSearch"
+      type="text"
+      placeholder="Buscar técnico por nombre o email..."
+      class="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/65 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all duration-200 placeholder-slate-400 dark:placeholder-slate-500"
+    />
+  </div>
+
+  <!-- Lista de técnicos -->
+  <div class="max-h-64 overflow-y-auto border border-slate-200/60 dark:border-slate-700/60 rounded-xl">
+    <div v-if="filteredTechnicians.length === 0" class="p-6 text-center text-sm text-slate-400 dark:text-slate-500">
+      No se encontraron técnicos disponibles.
+    </div>
+    <button
+      v-for="tech in filteredTechnicians"
+      :key="tech.id"
+      type="button"
+      @click="selectedTechnicianId = tech.id"
+      class="w-full px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors duration-150 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 last:border-b-0 cursor-pointer"
+      :class="{
+        'bg-primary/5 dark:bg-primary/10': selectedTechnicianId === tech.id
+      }"
+    >
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-primary to-primary-hover text-white flex items-center justify-center font-bold text-sm shrink-0">
+          {{ tech.nombre.charAt(0).toUpperCase() }}
+        </div>
+        <div class="min-w-0">
+          <p class="text-sm font-bold text-slate-800 dark:text-white truncate">{{ tech.nombre }}</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400 truncate">{{ tech.email }}</p>
+        </div>
+      </div>
+      <svg
+        v-if="selectedTechnicianId === tech.id"
+        class="w-5 h-5 text-primary shrink-0"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>
+    </button>
+  </div>
+</div>
+
+<template #footer>
+  <div class="flex gap-3 justify-end">
+    <BaseButton
+      variant="secondary"
+      @click="showTransferModal = false"
+      :disabled="transferLoading"
+    >
+      Cancelar
+    </BaseButton>
+    <BaseButton
+      variant="primary"
+      :disabled="!selectedTechnicianId"
+      :loading="transferLoading"
+      @click="handleConfirmTransfer"
+    >
+      <svg v-if="!transferLoading" class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+      </svg>
+      Solicitar Transferencia
+    </BaseButton>
+  </div>
+</template>
+</BaseModal>
+
+<!-- Diálogo de confirmación para rechazar transferencia -->
+<ConfirmDialog
+v-model="showRejectConfirm"
+title="¿Rechazar esta transferencia?"
+message="Al rechazar la transferencia, el ticket permanecerá con el técnico actual. Esta acción quedará registrada en la auditoría."
+confirm-text="Sí, rechazar"
+cancel-text="Cancelar"
+variant="danger"
+@confirm="handleConfirmReject"
+/>
 </div>
 </template>
 
@@ -455,7 +609,16 @@ import BaseButton from '@/components/base/BaseButton.vue'
 import BaseBadge from '@/components/base/BaseBadge.vue'
 import BaseDropdown from '@/components/base/BaseDropdown.vue'
 import ConfirmDialog from '@/components/base/ConfirmDialog.vue'
-import { changeStatus, closeTicket } from '@/services/ticketService'
+import BaseModal from '@/components/base/BaseModal.vue'
+import BaseTooltip from '@/components/base/BaseTooltip.vue'
+import { 
+  changeStatus, 
+  closeTicket,
+  requestTransfer,
+  acceptTransfer,
+  rejectTransfer,
+  getTechnicians
+} from '@/services/ticketService'
 
 const autoResizeInput = (event) => {
   const element = event.target;
@@ -551,6 +714,69 @@ const canCloseTicket = computed(() => {
   return isOwner.value && ['asignado', 'esperando', 'resuelto'].includes(estado)
 })
 
+// ============================================================
+// SPRINT 2 - FASE 3: Transferencias
+// ============================================================
+
+// Estados para el modal de transferencia
+const showTransferModal = ref(false)
+const technicians = ref([])
+const selectedTechnicianId = ref(null)
+const technicianSearch = ref('')
+const transferLoading = ref(false)
+const acceptLoading = ref(false)
+const rejectLoading = ref(false)
+const showRejectConfirm = ref(false)
+
+// Computed: ¿Se puede solicitar transferencia?
+const canRequestTransfer = computed(() => {
+  if (!ticket.value) return false
+  return isOwner.value 
+    && !ticket.value.transferido 
+    && !ticket.value.solicitudTransferenciaTecnicoId
+    && ticket.value.estado !== 'cerrado'
+})
+
+// Computed: Tooltip explicativo cuando el botón está deshabilitado
+const transferDisabledTooltip = computed(() => {
+  if (!ticket.value) return ''
+  if (!isOwner.value) return 'Solo el técnico asignado puede transferir este ticket'
+  if (ticket.value.transferido) return 'Este ticket ya fue transferido anteriormente'
+  if (ticket.value.solicitudTransferenciaTecnicoId) return 'Ya existe una solicitud de transferencia pendiente'
+  if (ticket.value.estado === 'cerrado') return 'No se puede transferir un ticket cerrado'
+  return ''
+})
+
+// Computed: Lista de técnicos filtrada (excluyendo al actual)
+const filteredTechnicians = computed(() => {
+  const currentUserId = authStore.user?.id
+  let list = technicians.value.filter(t => t.id !== currentUserId)
+  
+  if (technicianSearch.value.trim()) {
+    const search = technicianSearch.value.toLowerCase().trim()
+    list = list.filter(t => 
+      t.nombre.toLowerCase().includes(search) || 
+      t.email.toLowerCase().includes(search)
+    )
+  }
+  
+  return list
+})
+
+// Computed: ¿El usuario actual es el destino de una solicitud de transferencia pendiente?
+const isTransferDestination = computed(() => {
+  if (!ticket.value) return false
+  return ticket.value.solicitudTransferenciaTecnicoId === authStore.user?.id
+})
+
+// Computed: Nombre del técnico que solicita la transferencia
+const transferRequestFromName = computed(() => {
+  if (!ticket.value || !isTransferDestination.value) return ''
+  return tecnicoAsignado.value?.nombre || 'Técnico actual'
+})
+
+// Check mode Solo Lectura (Read Only)
+
 // Check mode Solo Lectura (Read Only)
 // Si el ticket no es nuevo y el usuario actual no es el asignado ni supervisor
 const isReadOnly = computed(() => {
@@ -603,10 +829,6 @@ const handleTakeCase = async () => {
     }
   }
 
-  const handleTransferCase = () => {
-  // Lógica provisional para conectar en el Sprint 2
-  alert('Funcionalidad de transferencia de técnico en desarrollo.');
-}
 
 // ============================================================
 // SPRINT 2 - FASE 2: Cambio de estado y cierre
@@ -647,28 +869,142 @@ const openCloseConfirm = () => {
 }
 
 /**
- * Confirmar y ejecutar el cierre del ticket
- */
+* Confirmar y ejecutar el cierre del ticket
+*/
 const handleConfirmClose = async () => {
-  if (!ticket.value) return
-  
-  closeLoading.value = true
+if (!ticket.value) return
+
+closeLoading.value = true
+try {
+  const response = await closeTicket(ticket.value.id)
+  if (response.success) {
+    // Recargar detalles del ticket
+    await fetchTicketDetails()
+  } else {
+    alert(response.error || 'Error al cerrar el ticket')
+  }
+} catch (error) {
+  console.error('Error closing ticket:', error)
+  alert(error.response?.data?.error || 'Error al conectar con el servidor')
+} finally {
+  closeLoading.value = false
+  showCloseConfirm.value = false
+}
+}
+
+// ============================================================
+// SPRINT 2 - FASE 3: Funciones de Transferencia
+// ============================================================
+
+/**
+* Cargar la lista de técnicos desde el backend
+*/
+const loadTechnicians = async () => {
   try {
-    const response = await closeTicket(ticket.value.id)
+    const response = await getTechnicians()
     if (response.success) {
-      // Recargar detalles del ticket
-      await fetchTicketDetails()
-    } else {
-      alert(response.error || 'Error al cerrar el ticket')
+      technicians.value = response.data || []
     }
   } catch (error) {
-    console.error('Error closing ticket:', error)
-    alert(error.response?.data?.error || 'Error al conectar con el servidor')
-  } finally {
-    closeLoading.value = false
-    showCloseConfirm.value = false
+    console.error('Error loading technicians:', error)
+    alert('Error al cargar la lista de técnicos')
   }
 }
+
+/**
+* Abrir modal de solicitud de transferencia
+*/
+const handleTransferCase = async () => {
+  if (!canRequestTransfer.value) return
+  
+  // Resetear estado del modal
+  selectedTechnicianId.value = null
+  technicianSearch.value = ''
+  
+  // Cargar técnicos si aún no se han cargado
+  if (technicians.value.length === 0) {
+    await loadTechnicians()
+  }
+  
+  showTransferModal.value = true
+}
+
+/**
+* Confirmar y enviar solicitud de transferencia
+*/
+const handleConfirmTransfer = async () => {
+  if (!ticket.value || !selectedTechnicianId.value) return
+  
+  transferLoading.value = true
+  try {
+    const response = await requestTransfer(ticket.value.id, selectedTechnicianId.value)
+    if (response.success) {
+      await fetchTicketDetails()
+      showTransferModal.value = false
+    } else {
+      alert(response.error || 'Error al solicitar transferencia')
+    }
+  } catch (error) {
+    console.error('Error requesting transfer:', error)
+    alert(error.response?.data?.error || 'Error al conectar con el servidor')
+  } finally {
+    transferLoading.value = false
+  }
+}
+
+/**
+* Aceptar transferencia (solo si eres el destino)
+*/
+const handleAcceptTransfer = async () => {
+  if (!ticket.value || !isTransferDestination.value) return
+  
+  acceptLoading.value = true
+  try {
+    const response = await acceptTransfer(ticket.value.id)
+    if (response.success) {
+      await fetchTicketDetails()
+    } else {
+      alert(response.error || 'Error al aceptar transferencia')
+    }
+  } catch (error) {
+    console.error('Error accepting transfer:', error)
+    alert(error.response?.data?.error || 'Error al conectar con el servidor')
+  } finally {
+    acceptLoading.value = false
+  }
+}
+
+/**
+* Abrir diálogo de confirmación para rechazar transferencia
+*/
+const openRejectConfirm = () => {
+  showRejectConfirm.value = true
+}
+
+/**
+* Confirmar y ejecutar el rechazo de transferencia
+*/
+const handleConfirmReject = async () => {
+  if (!ticket.value) return
+  
+  rejectLoading.value = true
+  try {
+    const response = await rejectTransfer(ticket.value.id)
+    if (response.success) {
+      await fetchTicketDetails()
+    } else {
+      alert(response.error || 'Error al rechazar transferencia')
+    }
+  } catch (error) {
+    console.error('Error rejecting transfer:', error)
+    alert(error.response?.data?.error || 'Error al conectar con el servidor')
+  } finally {
+    rejectLoading.value = false
+    showRejectConfirm.value = false
+  }
+}
+
+// File Select handlers
 
 // File Select handlers
 const triggerFileSelect = () => {
@@ -694,80 +1030,51 @@ const clearSelectedFile = () => {
   if (fileInput.value) fileInput.value.value = ''
 }
 
-// Send message
 const handleSendMessage = async () => {
-  if (isReadOnly.value) return
   if (!messageText.value.trim() && !selectedFile.value) return
-
+  
   sendLoading.value = true
-  
-  // Optimistic UI Append
-  const tempMsgId = `temp_${Date.now()}`
-  const optimisticMsg = {
-    id: tempMsgId,
-    remitente: 'tecnico',
-    tecnicoNombre: authStore.user?.nombre || 'Técnico',
-    contenido: messageText.value || (selectedFile.value ? `[Archivo: ${selectedFile.value.name}]` : ''),
-    tipo: selectedFile.value ? getFileType(selectedFile.value.type) : 'texto',
-    urlAdjunto: selectedFile.value ? URL.createObjectURL(selectedFile.value) : null,
-    enviadoEn: new Date().toISOString()
-  }
-  
-  mensajes.value.push(optimisticMsg)
-  scrollToBottom()
-
   try {
+    // ✅ Crear FormData para enviar archivos
     const formData = new FormData()
+    
+    // Añadir texto del mensaje
     if (messageText.value.trim()) {
-      formData.append('contenido', messageText.value.trim())
+      formData.append('contenido', messageText.value)
     }
+    
+    // ✅ Añadir archivo si existe
     if (selectedFile.value) {
       formData.append('archivo', selectedFile.value)
     }
-
+    
+    // ✅ Enviar como multipart/form-data
     const response = await api.post(`/tickets/${ticket.value.id}/messages`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
     })
-
-    if (response.data && response.data.success) {
-      // Reemplazar mensaje optimista con el real
-      const realMsg = response.data.data.mensaje
-      const idx = mensajes.value.findIndex(m => m.id === tempMsgId)
-      if (idx !== -1) {
-        mensajes.value[idx] = {
-          id: realMsg.id,
-          ticketId: realMsg.ticketId,
-          remitente: realMsg.remitente,
-          tecnicoNombre: realMsg.tecnico,
-          contenido: realMsg.contenido,
-          tipo: realMsg.tipo,
-          urlAdjunto: realMsg.urlAdjunto,
-          enviadoEn: realMsg.enviadoEn
-        }
-      }
-      
+    
+    if (response.data.success) {
       // Limpiar inputs
       messageText.value = ''
-      clearSelectedFile()
-
-      // Si el ticket era nuevo, ahora es asignado o esperando
-      if (ticket.value.estado === 'nuevo') {
-        fetchTicketDetails()
-      }
+      selectedFile.value = null
+      fileName.value = ''
+      fileSize.value = 0
+      
+      // Resetear altura del textarea
+      resetInputHeight()
+      
+      // Recargar mensajes
+      await fetchTicketDetails()
     } else {
-      alert(response.data?.error || 'Error al enviar mensaje')
-      // Remover optimista si falló
-      mensajes.value = mensajes.value.filter(m => m.id !== tempMsgId)
+      alert(response.data.error || 'Error al enviar mensaje')
     }
   } catch (error) {
     console.error('Error sending message:', error)
-    alert(error.response?.data?.error || 'Error al conectar con la API para enviar mensaje.')
-    mensajes.value = mensajes.value.filter(m => m.id !== tempMsgId)
+    alert(error.response?.data?.error || 'Error al conectar con el servidor')
   } finally {
     sendLoading.value = false
-    scrollToBottom()
   }
 }
 
