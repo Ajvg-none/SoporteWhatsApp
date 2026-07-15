@@ -20,17 +20,25 @@ export async function createUser(userData) {
 }
 
 /**
- * Eliminar usuario (solo supervisor)
- * @param {number} userId - ID del usuario a eliminar
+ * Desactivar un usuario sin eliminarlo físicamente
+ * @param {number} userId - ID del usuario a desactivar
  * @returns {Promise} Resultado
  */
-export async function deleteUser(userId) {
-  const response = await api.delete(`/users/${userId}`)
+export async function desactivarUsuario(userId) {
+  const response = await api.patch(`/users/${userId}/desactivar`)
   return response.data
+}
+
+/**
+ * Alias para mantener compatibilidad con el resto de la app
+ */
+export async function deleteUser(userId) {
+  return desactivarUsuario(userId)
 }
 
 export default {
   getUsers,
   createUser,
+  desactivarUsuario,
   deleteUser
 }

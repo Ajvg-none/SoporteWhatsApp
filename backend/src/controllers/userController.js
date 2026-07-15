@@ -8,28 +8,24 @@ const prisma = new PrismaClient();
  */
 exports.getUsers = async (req, res) => {
   try {
-    const users = await prisma.usuario.findMany({
+    const usuarios = await prisma.usuario.findMany({
+      where: { activo: true },
       select: {
         id: true,
         nombre: true,
         email: true,
         rol: true,
-        creadoEn: true
+        activo: true
       },
-      orderBy: {
-        nombre: 'asc'
-      }
+      orderBy: { id: 'asc' }
     });
-    res.json({
-      success: true,
-      data: users
-    });
+    
+    // CÓDIGO CORREGIDO:
+    res.status(200).json({ success: true, data: usuarios });
+    
   } catch (error) {
-    console.error('❌ Error en getUsers:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Error interno del servidor'
-    });
+    console.error("Error al obtener usuarios:", error);
+    res.status(500).json({ error: "Error interno del servidor al obtener usuarios" });
   }
 };
 
@@ -75,62 +71,115 @@ exports.getTechnicians = async (req, res) => {
 exports.createUser = async (req, res) => {
   try {
     const { nombre, email, password, rol } = req.body;
-    
-    // 1. Validar campos obligatorios
-    if (!nombre || !email || !password) {
+    const emailNormalizado = email.trim().toLowerCase();
+
+    // 1. Verificar si el correo ya está registrado (activo o inactivo)
+    const usuarioExistente = await prisma.usuario.findFirst({
+      where: { email: emailNormalizado }
+    });
+
+    if (usuarioExistente) {
+      // SI EL USUARIO EXISTE PERO ESTÁ INACTIVO -> LO RE-ACTIVAMOS Y ACTUALIZAMOS
+      if (!usuarioExistente.activo) {
+        const bcrypt = require('bcryptjs');
+        const salt = await bcrypt.genSalt(10);
+        const contraseñaHash = await bcrypt.hash(password, salt);
+
+        const usuarioReactivado = await prisma.usuario.update({
+          where: { id: usuarioExistente.id },
+          data: {
+            nombre: nombre.trim(),
+            contraseñaHash: contraseñaHash,
+            rol: rol,
+            activo: true // Volvemos a darle acceso
+          }
+        });
+
+        return res.status(200).json({
+          success: true,
+          message: "El usuario ya existía pero estaba inactivo. Ha sido re-activado y actualizado con éxito.",
+          data: {
+            id: usuarioReactivado.id,
+            nombre: usuarioReactivado.nombre,
+            email: usuarioReactivado.email,
+            rol: usuarioReactivado.rol
+          }
+        });
+      }
+
+      // SI EL USUARIO YA ESTÁ ACTIVO -> AHÍ SÍ LANZAMOS EL ERROR
       return res.status(400).json({
         success: false,
-        error: 'Faltan campos obligatorios: nombre, email, password'
+        error: "El correo electrónico ya se encuentra registrado y activo en el sistema."
       });
     }
 
-    // 2. Validar que el email no esté en uso
-    const existingUser = await prisma.usuario.findUnique({
-      where: { email }
-    });
-    if (existingUser) {
-      return res.status(409).json({
-        success: false,
-        error: 'El email ya está registrado'
-      });
-    }
-
-    // 3. Determinar el rol (por defecto 'tecnico')
-    const userRol = rol === 'supervisor' ? 'supervisor' : 'tecnico';
-
-    // 4. Hashear contraseña
+    // 2. Si no existe en absoluto, procedemos con tu lógica normal de creación...
     const bcrypt = require('bcryptjs');
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const salt = await bcrypt.genSalt(10);
+    const contraseñaHash = await bcrypt.hash(password, salt);
 
-    // 5. Crear usuario
-    const newUser = await prisma.usuario.create({
+    const nuevoUsuario = await prisma.usuario.create({
       data: {
         nombre: nombre.trim(),
-        email: email.trim().toLowerCase(),
-        contraseñaHash: hashedPassword,
-        rol: userRol
-      },
-      select: {
-        id: true,
-        nombre: true,
-        email: true,
-        rol: true,
-        creadoEn: true
+        email: emailNormalizado,
+        contraseñaHash: contraseñaHash,
+        rol: rol,
+        activo: true
       }
     });
 
-    // 6. Respuesta exitosa
     res.status(201).json({
       success: true,
-      message: `Usuario ${userRol} creado exitosamente`,
-      data: newUser
+      data: {
+        id: nuevoUsuario.id,
+        nombre: nuevoUsuario.nombre,
+        email: nuevoUsuario.email,
+        rol: nuevoUsuario.rol
+      }
     });
+
   } catch (error) {
-    console.error('❌ Error en createUser:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Error interno del servidor'
+    console.error("Error al crear/re-activar usuario:", error);
+    res.status(500).json({ success: false, error: "Error interno del servidor" });
+  }
+};
+
+/**
+ * PATCH /api/users/:id/desactivar
+ * Desactivar un usuario (soft delete) sin eliminarlo físicamente
+ * ✅ Requiere: verifyToken + checkSupervisorRole
+ */
+exports.desactivarUsuario = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const usuarioIdNumerico = Number(id);
+
+    const usuarioExistente = await prisma.usuario.findUnique({
+      where: { id: usuarioIdNumerico }
     });
+
+    if (!usuarioExistente) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+
+    if (req.user && req.user.id === usuarioIdNumerico) {
+      return res.status(400).json({ error: "No puedes desactivar tu propia cuenta" });
+    }
+
+    await prisma.usuario.update({
+      where: { id: usuarioIdNumerico },
+      data: { activo: false }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Técnico desactivado correctamente. Sus registros históricos se conservan."
+    });
+
+  } catch (error) {
+    console.error("Error en desactivarUsuario:", error);
+    res.status(500).json({ error: "Error interno del servidor al desactivar el usuario" });
   }
 };
 
@@ -143,74 +192,38 @@ exports.createUser = async (req, res) => {
 exports.deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = parseInt(id);
+    const usuarioIdNumerico = Number(id);
 
-    // 1. Validar que el ID sea válido
-    if (isNaN(userId)) {
-      return res.status(400).json({
-        success: false,
-        error: 'ID de usuario inválido'
-      });
-    }
-
-    // 2. Verificar que el usuario existe
-    const user = await prisma.usuario.findUnique({
-      where: { id: userId }
+    // 1. Verificar que el usuario existe
+    const usuarioExistente = await prisma.usuario.findUnique({
+      where: { id: usuarioIdNumerico }
     });
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: 'Usuario no encontrado'
-      });
+
+    if (!usuarioExistente) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
     }
 
-    // 3. No permitir eliminar a sí mismo
-    if (userId === req.user.id) {
-      return res.status(400).json({
-        success: false,
-        error: 'No puedes eliminar tu propia cuenta'
-      });
+    // 2. Seguridad: Evitar que un usuario se desactive a sí mismo
+    // (Asegúrate de que tu middleware de auth guarde el ID en req.user.id)
+    if (req.user && req.user.id === usuarioIdNumerico) {
+      return res.status(400).json({ error: "No puedes desactivar tu propia cuenta" });
     }
 
-    // 4. No permitir eliminar al último supervisor
-    if (user.rol === 'supervisor') {
-      const supervisorCount = await prisma.usuario.count({
-        where: { rol: 'supervisor' }
-      });
-      if (supervisorCount <= 1) {
-        return res.status(400).json({
-          success: false,
-          error: 'No se puede eliminar al último supervisor del sistema'
-        });
+    // 3. ELIMINACIÓN LÓGICA (Soft Delete): Actualizamos 'activo' a false
+    await prisma.usuario.update({
+      where: { id: usuarioIdNumerico },
+      data: { 
+        activo: false 
       }
-    }
-
-    // 5. Verificar si tiene tickets asignados
-    const ticketsAsignados = await prisma.ticket.count({
-      where: { tecnicoAsignadoId: userId }
-    });
-    if (ticketsAsignados > 0) {
-      return res.status(400).json({
-        success: false,
-        error: `No se puede eliminar el usuario porque tiene ${ticketsAsignados} tickets asignados. Reasigna los tickets primero.`
-      });
-    }
-
-    // 6. Eliminar usuario
-    await prisma.usuario.delete({
-      where: { id: userId }
     });
 
-    // 7. Respuesta exitosa
-    res.json({
-      success: true,
-      message: `Usuario ${user.nombre} eliminado correctamente`
+    // 4. Respuesta exitosa
+    res.status(200).json({ 
+      message: "Técnico desactivado correctamente. Sus registros históricos se conservan." 
     });
+
   } catch (error) {
-    console.error('❌ Error en deleteUser:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Error interno del servidor'
-    });
+    console.error("Error en deleteUser:", error);
+    res.status(500).json({ error: "Error interno del servidor al desactivar el usuario" });
   }
 };
