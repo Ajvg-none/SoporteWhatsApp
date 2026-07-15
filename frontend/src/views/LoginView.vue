@@ -40,7 +40,7 @@
     </form>
 
     <p class="mt-6 text-center text-xs font-semibold text-slate-400 dark:text-slate-300">
-      ¿Problemas para acceder? Contacta al administrador
+      ¿Problemas para acceder? Contacta al Ricardo de Inciarte
     </p>
   </div>
 </template>

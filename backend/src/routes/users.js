@@ -26,6 +26,13 @@ router.get('/', verifyToken, checkSupervisorRole, userController.getUsers);
 router.post('/', verifyToken, checkSupervisorRole, userController.createUser);
 
 /**
+ * PATCH /api/users/:id/desactivar
+ * Desactivar un usuario sin eliminarlo físicamente
+ * ✅ Requiere: verifyToken + checkSupervisorRole
+ */
+router.patch('/:id/desactivar', verifyToken, checkSupervisorRole, userController.desactivarUsuario);
+
+/**
  * DELETE /api/users/:id
  * Eliminar un usuario
  * ✅ Requiere: verifyToken + checkSupervisorRole

@@ -72,7 +72,7 @@
                   @click="openDeleteConfirm(user)"
                   class="text-danger hover:text-red-600 dark:text-danger dark:hover:text-red-500 font-semibold transition-colors cursor-pointer"
                 >
-                  Eliminar
+                  Desactivar
                 </button>
               </td>
             </tr>
@@ -149,9 +149,9 @@
     <!-- Dialog: Confirmar Eliminación -->
     <ConfirmDialog
       v-model="showDeleteConfirm"
-      title="¿Eliminar este usuario?"
-      :message="`Al eliminar a ${selectedUser?.nombre || 'este usuario'}, perderá acceso al sistema. Esta acción no se puede deshacer.`"
-      confirm-text="Sí, eliminar"
+      title="¿Desactivar este usuario?"
+      :message="`Al desactivar a ${selectedUser?.nombre || 'este usuario'}, perderá acceso al sistema. Su historial de auditoría y tickets asignados se conservarán.`"
+      confirm-text="Sí, desactivar"
       cancel-text="Cancelar"
       variant="danger"
       @confirm="handleDeleteUser"
@@ -169,7 +169,7 @@ import BaseBadge from '@/components/base/BaseBadge.vue'
 import BaseModal from '@/components/base/BaseModal.vue'
 import BaseInput from '@/components/base/BaseInput.vue'
 import ConfirmDialog from '@/components/base/ConfirmDialog.vue'
-import { getUsers, createUser, deleteUser } from '@/services/userService'
+import { getUsers, createUser, desactivarUsuario } from '@/services/userService'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -281,17 +281,18 @@ const handleDeleteUser = async () => {
   
   deleteLoading.value = true
   try {
-    const response = await deleteUser(selectedUser.value.id)
+    const response = await desactivarUsuario(selectedUser.value.id)
     if (response.success) {
       showDeleteConfirm.value = false
       await fetchUsers()
-      alert('Usuario eliminado exitosamente')
+      alert('✅ Técnico desactivado correctamente.')
     } else {
-      alert(response.error || 'Error al eliminar usuario')
+      alert(response.error || 'Error al desactivar usuario')
     }
   } catch (err) {
-    console.error('Error deleting user:', err)
-    alert(err.response?.data?.error || 'Error de conexión')
+    console.error('Error desactivando usuario:', err)
+    const mensaje = err.response?.data?.error || 'Ocurrió un error al desactivar al técnico.'
+    alert(`❌ Error: ${mensaje}`)
   } finally {
     deleteLoading.value = false
   }

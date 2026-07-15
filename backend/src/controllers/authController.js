@@ -21,19 +21,22 @@ exports.login = async (req, res) => {
       });
     }
 
-    // 2. Buscar usuario
-    const usuario = await prisma.usuario.findUnique({
-      where: { email: email.trim().toLowerCase() }
+    // 2. Buscar usuario activo
+    const usuario = await prisma.usuario.findFirst({
+      where: {
+        email: email.trim().toLowerCase(),
+        activo: true
+      }
     });
 
     console.log('Usuario encontrado:', usuario ? 'SÍ' : 'NO');
 
     if (!usuario) {
-      console.log('ERROR: Usuario no existe en la BD');
+      console.log('ERROR: Usuario no existe en la BD o está inactivo');
       console.log('=================================\n');
       return res.status(401).json({
         success: false,
-        error: 'Credenciales inválidas'
+        error: 'Credenciales inválidas o usuario inactivo'
       });
     }
 
