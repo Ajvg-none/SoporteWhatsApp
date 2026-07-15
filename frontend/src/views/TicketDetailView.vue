@@ -141,6 +141,20 @@
               </BaseTooltip>
             </div>
 
+            <!-- Botón Reasignar (solo supervisores) - S2-A05 -->
+            <div v-if="canForceAssign" class="mt-3">
+              <BaseButton
+                variant="outline"
+                class="w-full flex items-center justify-center text-xs font-bold shadow-xs"
+                @click="handleForceAssignCase"
+              >
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                Reasignar (Supervisor)
+              </BaseButton>
+            </div>
+
 <!-- Botón Cerrar Ticket (solo propietario + estados permitidos) -->
 <div v-if="canCloseTicket" class="mt-3">
   <BaseButton
@@ -499,91 +513,98 @@ variant="danger"
 @confirm="handleConfirmClose"
 />
 
-<!-- Modal de Solicitud de Transferencia -->
+<!-- Modal de Transferencia / Reasignación Forzada (S2-A05) -->
 <BaseModal
-v-model="showTransferModal"
-title="Solicitar Transferencia"
-size="md"
+  v-model="showTransferModal"
+  :title="modalMode === 'forceAssign' ? 'Reasignar Ticket (Supervisor)' : 'Solicitar Transferencia'"
+  size="md"
 >
-<div class="space-y-4">
-  <p class="text-sm text-slate-600 dark:text-slate-400">
-    Selecciona el técnico al que deseas transferir este ticket. El técnico destino recibirá una notificación y podrá aceptar o rechazar la solicitud.
-  </p>
-
-  <!-- Buscador -->
-  <div class="relative">
-    <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-      </svg>
-    </span>
-    <input
-      v-model="technicianSearch"
-      type="text"
-      placeholder="Buscar técnico por nombre o email..."
-      class="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/65 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all duration-200 placeholder-slate-400 dark:placeholder-slate-500"
-    />
-  </div>
-
-  <!-- Lista de técnicos -->
-  <div class="max-h-64 overflow-y-auto border border-slate-200/60 dark:border-slate-700/60 rounded-xl">
-    <div v-if="filteredTechnicians.length === 0" class="p-6 text-center text-sm text-slate-400 dark:text-slate-500">
-      No se encontraron técnicos disponibles.
+  <div class="space-y-4">
+    <p class="text-sm text-slate-600 dark:text-slate-400">
+      <template v-if="modalMode === 'forceAssign'">
+        Como supervisor, puedes reasignar este ticket directamente a otro técnico
+        <b>sin necesidad de su aprobación</b>. La acción quedará registrada en la auditoría.
+      </template>
+      <template v-else>
+        Selecciona el técnico al que deseas transferir este ticket. El técnico destino
+        recibirá una notificación y podrá aceptar o rechazar la solicitud.
+      </template>
+    </p>
+    <!-- Buscador -->
+    <div class="relative">
+      <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </span>
+      <input
+        v-model="technicianSearch"
+        type="text"
+        placeholder="Buscar técnico por nombre o email..."
+        class="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/65 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all duration-200 placeholder-slate-400 dark:placeholder-slate-500"
+      />
     </div>
-    <button
-      v-for="tech in filteredTechnicians"
-      :key="tech.id"
-      type="button"
-      @click="selectedTechnicianId = tech.id"
-      class="w-full px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors duration-150 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 last:border-b-0 cursor-pointer"
-      :class="{
-        'bg-primary/5 dark:bg-primary/10': selectedTechnicianId === tech.id
-      }"
-    >
-      <div class="flex items-center gap-3 min-w-0">
-        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-primary to-primary-hover text-white flex items-center justify-center font-bold text-sm shrink-0">
-          {{ tech.nombre.charAt(0).toUpperCase() }}
-        </div>
-        <div class="min-w-0">
-          <p class="text-sm font-bold text-slate-800 dark:text-white truncate">{{ tech.nombre }}</p>
-          <p class="text-xs text-slate-500 dark:text-slate-400 truncate">{{ tech.email }}</p>
-        </div>
+    <!-- Lista de técnicos -->
+    <div class="max-h-64 overflow-y-auto border border-slate-200/60 dark:border-slate-700/60 rounded-xl">
+      <div v-if="filteredTechnicians.length === 0" class="p-6 text-center text-sm text-slate-400 dark:text-slate-500">
+        No se encontraron técnicos disponibles.
       </div>
-      <svg
-        v-if="selectedTechnicianId === tech.id"
-        class="w-5 h-5 text-primary shrink-0"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
+      <button
+        v-for="tech in filteredTechnicians"
+        :key="tech.id"
+        type="button"
+        @click="selectedTechnicianId = tech.id"
+        class="w-full px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors duration-150 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 last:border-b-0 cursor-pointer"
+        :class="{
+          'bg-primary/5 dark:bg-primary/10': selectedTechnicianId === tech.id
+        }"
       >
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-      </svg>
-    </button>
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-primary to-primary-hover text-white flex items-center justify-center font-bold text-sm shrink-0">
+            {{ tech.nombre.charAt(0).toUpperCase() }}
+          </div>
+          <div class="min-w-0">
+            <p class="text-sm font-bold text-slate-800 dark:text-white truncate">{{ tech.nombre }}</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 truncate">{{ tech.email }}</p>
+          </div>
+        </div>
+        <svg
+          v-if="selectedTechnicianId === tech.id"
+          class="w-5 h-5 text-primary shrink-0"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+      </button>
+    </div>
   </div>
-</div>
-
-<template #footer>
-  <div class="flex gap-3 justify-end">
-    <BaseButton
-      variant="secondary"
-      @click="showTransferModal = false"
-      :disabled="transferLoading"
-    >
-      Cancelar
-    </BaseButton>
-    <BaseButton
-      variant="primary"
-      :disabled="!selectedTechnicianId"
-      :loading="transferLoading"
-      @click="handleConfirmTransfer"
-    >
-      <svg v-if="!transferLoading" class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-      </svg>
-      Solicitar Transferencia
-    </BaseButton>
-  </div>
-</template>
+  <template #footer>
+    <div class="flex gap-3 justify-end">
+      <BaseButton
+        variant="secondary"
+        @click="showTransferModal = false"
+        :disabled="transferLoading || forceAssignLoading"
+      >
+        Cancelar
+      </BaseButton>
+      <BaseButton
+        :variant="modalMode === 'forceAssign' ? 'danger' : 'primary'"
+        :disabled="!selectedTechnicianId"
+        :loading="modalMode === 'forceAssign' ? forceAssignLoading : transferLoading"
+        @click="modalMode === 'forceAssign' ? handleConfirmForceAssign() : handleConfirmTransfer()"
+      >
+        <svg v-if="modalMode === 'forceAssign' && !forceAssignLoading" class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+        <svg v-else-if="modalMode !== 'forceAssign' && !transferLoading" class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+        </svg>
+        {{ modalMode === 'forceAssign' ? 'Reasignar Forzosamente' : 'Solicitar Transferencia' }}
+      </BaseButton>
+    </div>
+  </template>
 </BaseModal>
 
 <!-- Diálogo de confirmación para rechazar transferencia -->
@@ -611,12 +632,13 @@ import BaseDropdown from '@/components/base/BaseDropdown.vue'
 import ConfirmDialog from '@/components/base/ConfirmDialog.vue'
 import BaseModal from '@/components/base/BaseModal.vue'
 import BaseTooltip from '@/components/base/BaseTooltip.vue'
-import { 
-  changeStatus, 
+import {
+  changeStatus,
   closeTicket,
   requestTransfer,
   acceptTransfer,
   rejectTransfer,
+  forceAssign,
   getTechnicians
 } from '@/services/ticketService'
 
@@ -720,6 +742,7 @@ const canCloseTicket = computed(() => {
 
 // Estados para el modal de transferencia
 const showTransferModal = ref(false)
+const modalMode = ref('transfer')  // ← AGREGAR ESTA LÍNEA ('transfer' | 'forceAssign')
 const technicians = ref([])
 const selectedTechnicianId = ref(null)
 const technicianSearch = ref('')
@@ -727,6 +750,8 @@ const transferLoading = ref(false)
 const acceptLoading = ref(false)
 const rejectLoading = ref(false)
 const showRejectConfirm = ref(false)
+const showForceAssignModal = ref(false)
+const forceAssignLoading = ref(false)
 
 // Computed: ¿Se puede solicitar transferencia?
 const canRequestTransfer = computed(() => {
@@ -735,6 +760,12 @@ const canRequestTransfer = computed(() => {
     && !ticket.value.transferido 
     && !ticket.value.solicitudTransferenciaTecnicoId
     && ticket.value.estado !== 'cerrado'
+})
+
+// Computed: ¿Se puede reasignar forzosamente? (solo supervisores) - S2-A05
+const canForceAssign = computed(() => {
+  if (!ticket.value) return false
+  return authStore.isSupervisor && ticket.value.estado !== 'cerrado'
 })
 
 // Computed: Tooltip explicativo cuando el botón está deshabilitado
@@ -927,6 +958,44 @@ const handleTransferCase = async () => {
   }
   
   showTransferModal.value = true
+}
+
+/**
+ * S2-A05: Abrir modal de reasignación forzada (solo supervisores)
+ */
+const handleForceAssignCase = async () => {
+  if (!canForceAssign.value) return
+  // Resetear estado del modal
+  selectedTechnicianId.value = null
+  technicianSearch.value = ''
+  modalMode.value = 'forceAssign'
+  // Cargar técnicos si aún no se han cargado
+  if (technicians.value.length === 0) {
+    await loadTechnicians()
+  }
+  showTransferModal.value = true // Reutilizamos el mismo modal
+}
+
+/**
+ * S2-A05: Confirmar y ejecutar la reasignación forzada
+ */
+const handleConfirmForceAssign = async () => {
+  if (!ticket.value || !selectedTechnicianId.value) return
+  forceAssignLoading.value = true
+  try {
+    const response = await forceAssign(ticket.value.id, selectedTechnicianId.value)
+    if (response.success) {
+      await fetchTicketDetails()
+      showTransferModal.value = false
+    } else {
+      alert(response.error || 'Error al reasignar el ticket')
+    }
+  } catch (error) {
+    console.error('Error force-assigning ticket:', error)
+    alert(error.response?.data?.error || 'Error al conectar con el servidor')
+  } finally {
+    forceAssignLoading.value = false
+  }
 }
 
 /**
