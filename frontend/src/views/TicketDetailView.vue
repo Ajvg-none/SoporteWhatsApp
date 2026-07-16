@@ -115,19 +115,23 @@
             </BaseBadge>
           </div>
         </div>
-        <div v-if="ticket.estado === 'nuevo'">
+        <Transition name="fade" mode="out-in">
+          <template v-if="ticket.estado === 'nuevo'">
+            <div key="take-case">
               <BaseButton
                 variant="primary"
                 class="w-full flex items-center justify-center shadow-md shadow-primary/20"
-                :loading="actionLoading"
+                :loading="takingCase"
                 @click="handleTakeCase"
               >
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                <svg v-if="!takingCase" class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                 Tomar Caso
               </BaseButton>
             </div>
+          </template>
 
-            <div v-else-if="!isReadOnly && ticket.estado !== 'cerrado'" class="mt-3">
+          <template v-else-if="!isReadOnly && ticket.estado !== 'cerrado'">
+            <div class="mt-3">
               <BaseTooltip :text="!canRequestTransfer ? transferDisabledTooltip : ''" position="top">
                 <BaseButton
                   variant="secondary"
@@ -140,6 +144,8 @@
                 </BaseButton>
               </BaseTooltip>
             </div>
+          </template>
+        </Transition>
 
             <!-- Botón Reasignar (solo supervisores) - S2-A05 -->
             <div v-if="canForceAssign" class="mt-3">
@@ -673,7 +679,7 @@ const selectedFile = ref(null)
 const fileInput = ref(null)
 
 // Loadings
-const actionLoading = ref(false)
+const takingCase = ref(false)
 const sendLoading = ref(false)
 
 // Chat UI Ref
@@ -842,13 +848,42 @@ const fetchTicketDetails = async () => {
 
 const handleTakeCase = async () => {
   if (!ticket.value) return
-  actionLoading.value = true
+  takingCase.value = true
   try {
-    // Se envía un objeto vacío {} para forzar el encabezado Content-Type correcto
     const response = await api.post(`/tickets/${ticket.value.id}/assign`, {})
     if (response.data && response.data.success) {
-      // Recargar detalles
-      await fetchTicketDetails()
+      // ✅ ACTUALIZACIÓN LOCAL SUAVE (sin recargar todo el componente)
+      const data = response.data.data
+
+      // Actualizar el ticket localmente
+      ticket.value.estado = data.ticket.estado
+      ticket.value.tecnicoAsignadoId = data.ticket.tecnicoAsignadoId
+      ticket.value.actualizadoEn = data.ticket.actualizadoEn
+
+      // Actualizar el técnico asignado
+      if (data.tecnicoAsignado) {
+        tecnicoAsignado.value = data.tecnicoAsignado
+      }
+
+      // Agregar entrada de auditoría localmente (opcional pero recomendado)
+      auditoria.value.push({
+        id: Date.now(), // ID temporal
+        ticketId: ticket.value.id,
+        usuarioId: authStore.user?.id,
+        usuarioNombre: authStore.user?.nombre || 'Tú',
+        usuarioRol: authStore.user?.rol,
+        accion: 'asignacion',
+        detalle: {
+          tecnico_nuevo: data.ticket.tecnicoAsignadoId,
+          estado_anterior: 'nuevo',
+          estado_nuevo: 'asignado',
+          asignado_por: 'auto-asignación'
+        },
+        fechaHora: new Date().toISOString()
+      })
+
+      // Pequeña pausa para que se vea la animación del spinner (300ms)
+      await new Promise(resolve => setTimeout(resolve, 300))
     } else {
       alert(response.data?.error || 'Error al tomar el caso')
     }
@@ -856,9 +891,9 @@ const handleTakeCase = async () => {
     console.error('Error taking case:', error)
     alert(error.response?.data?.error || 'Error al conectar con el servidor.')
   } finally {
-      actionLoading.value = false
-    }
+    takingCase.value = false
   }
+}
 
 
 // ============================================================
