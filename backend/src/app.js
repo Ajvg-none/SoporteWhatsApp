@@ -12,6 +12,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const { PrismaClient } = require('@prisma/client');
 
+
 // Middlewares de autenticación (S1-B04)
 const { verifyToken, checkSupervisorRole } = require('./middlewares/auth');
 
@@ -154,6 +155,9 @@ app.use((err, req, res, next) => {
 // 10. INICIO DEL SERVIDOR
 // ============================================================
 const PORT = process.env.PORT || 3000;
+
+
+const socketService = require('./services/socketService');
 
 
 // ============================================================
