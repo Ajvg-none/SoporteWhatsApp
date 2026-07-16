@@ -15,8 +15,11 @@ exports.getTickets = async (req, res) => {
       buscar,
       page = 1,
       limit = 20,
-      solo_cerrados = 'false'
+      solo_cerrados = 'false',
+      mis_tickets = 'false' // ← NUEVO: filtro para tickets del técnico actual
     } = req.query;
+
+    const userId = req.user.id; // ← NUEVO: obtener ID del usuario autenticado
 
     // Validar page y limit
     const pageNum = Math.max(1, parseInt(page) || 1);
@@ -26,8 +29,16 @@ exports.getTickets = async (req, res) => {
     // 2. Construir el filtro WHERE
     const where = {};
 
-    // Filtro por estado
-    if (estado) {
+    // ✅ NUEVO: Filtro para "Mis Tickets"
+    if (mis_tickets === 'true') {
+      where.tecnicoAsignadoId = userId;
+      // Solo mostrar tickets activos (no cerrados)
+      where.estado = {
+        in: ['asignado', 'esperando', 'resuelto']
+      };
+    }
+    // Filtro por estado (solo si no es "mis_tickets")
+    else if (estado) {
       where.estado = estado.toLowerCase();
     } else if (solo_cerrados === 'false') {
       // Por defecto, excluir tickets cerrados
@@ -89,7 +100,6 @@ exports.getTickets = async (req, res) => {
               email: true
             }
           },
-          // ✅ Incluir también el técnico destino de transferencia pendiente
           solicitudTransferenciaTecnico: {
             select: {
               id: true,
@@ -116,7 +126,6 @@ exports.getTickets = async (req, res) => {
         totalPages
       }
     });
-
   } catch (error) {
     console.error('❌ Error en getTickets:', error);
     res.status(500).json({
