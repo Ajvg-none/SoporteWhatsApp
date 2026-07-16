@@ -1413,52 +1413,78 @@ exports.forceAssign = async (req, res) => {
 };
 
 /**
- * GET /api/tickets/counts
- * Obtener conteo de tickets por estado
- * ✅ Incluye conteo de tickets nuevos para el badge
+ * GET /api/tickets/transferencias-pendientes
+ * Obtener todas las solicitudes de transferencia pendientes para el técnico actual
  */
-exports.getTicketCounts = async (req, res) => {
+exports.getTransferenciasPendientes = async (req, res) => {
   try {
     const userId = req.user.id;
+    console.log(`🔍 Buscando transferencias pendientes para el usuario: ${userId}`);
 
-    // Ejecutar todas las consultas en paralelo
-    const [
-      nuevos,
-      asignados,
-      esperando,
-      resueltos,
-      cerrados,
-      misAsignados
-    ] = await Promise.all([
-      prisma.ticket.count({ where: { estado: 'nuevo' } }),
-      prisma.ticket.count({ where: { estado: 'asignado' } }),
-      prisma.ticket.count({ where: { estado: 'esperando' } }),
-      prisma.ticket.count({ where: { estado: 'resuelto' } }),
-      prisma.ticket.count({ where: { estado: 'cerrado' } }),
-      prisma.ticket.count({
-        where: {
-          tecnicoAsignadoId: userId,
-          estado: { in: ['asignado', 'esperando', 'resuelto'] }
+    // Primero, verificar que el usuario existe
+    const usuario = await prisma.usuario.findUnique({
+      where: { id: userId }
+    });
+
+    if (!usuario) {
+      console.log(`❌ Usuario ${userId} no encontrado`);
+      return res.status(404).json({
+        success: false,
+        error: 'Usuario no encontrado'
+      });
+    }
+
+    // Buscar tickets donde el técnico actual es el destino de una transferencia pendiente
+    const tickets = await prisma.ticket.findMany({
+      where: {
+        solicitudTransferenciaTecnicoId: userId,
+        estado: {
+          not: 'cerrado'
         }
-      })
-    ]);
+      },
+      include: {
+        contacto: {
+          select: {
+            numero_telefono: true,
+            nombre: true,
+            sucursal: true
+          }
+        },
+        tecnicoAsignado: {
+          select: {
+            id: true,
+            nombre: true,
+            email: true
+          }
+        },
+        solicitudTransferenciaTecnico: {
+          select: {
+            id: true,
+            nombre: true,
+            email: true
+          }
+        }
+      },
+      orderBy: {
+        actualizadoEn: 'desc'
+      }
+    });
+
+    console.log(`✅ Encontrados ${tickets.length} tickets con transferencia pendiente`);
 
     res.json({
       success: true,
-      data: {
-        nuevos,
-        asignados,
-        esperando,
-        resueltos,
-        cerrados,
-        misAsignados
-      }
+      data: tickets,
+      total: tickets.length
     });
+
   } catch (error) {
-    console.error('❌ Error en getTicketCounts:', error);
+    console.error('❌ Error en getTransferenciasPendientes:', error);
+    console.error('❌ Stack:', error.stack);
     res.status(500).json({
       success: false,
-      error: 'Error interno del servidor'
+      error: 'Error interno del servidor',
+      details: error.message
     });
   }
 };

@@ -1,4 +1,9 @@
+<<<<<<< HEAD
 #node_modules/
+=======
+
+node_modules/
+>>>>>>> main
 .env
 
 # Dependencias de Node
@@ -13,6 +18,9 @@ yarn-error.log*
 
 # Archivos generados por Prisma
 /prisma/migrations/
+<<<<<<< HEAD
 /prisma/migrations/
 /prisma/migrations/
+=======
+>>>>>>> main
 

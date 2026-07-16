@@ -1,4 +1,9 @@
+<<<<<<< HEAD
 #node_modules/
+=======
+
+node_modules/
+>>>>>>> main
 .env
 dist/
 
@@ -20,6 +25,9 @@ dist-ssr/
 *.njsproj
 *.sln
 *.sw?
+<<<<<<< HEAD
 *.sw?
 *.sw?
+=======
+>>>>>>> main
 

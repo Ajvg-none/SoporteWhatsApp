@@ -12,6 +12,9 @@
       </div>
     </div>
 
+    <!-- 🟣 Transferencias Pendientes -->
+    <TransferenciasPendientes />
+
     <!-- Filtros y Búsqueda -->
     <BaseCard class="border border-slate-100/80 dark:border-slate-800/80 shadow-sm">
       <div class="flex flex-col md:flex-row gap-4">
@@ -228,12 +231,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseBadge from '@/components/base/BaseBadge.vue'
+import TransferenciasPendientes from '@/components/TransferenciasPendientes.vue'
 
 const authStore = useAuthStore()
 
@@ -270,6 +274,10 @@ const tabs = [
   { label: 'Resueltos', value: 'resuelto' },
   { label: 'Cerrados', value: 'cerrado' }
 ]
+
+// ============================================================
+// FUNCIONES
+// ============================================================
 
 const fetchTickets = async () => {
   loading.value = true
@@ -364,17 +372,20 @@ const formatDate = (dateStr) => {
   })
 }
 
-const getCountForTab = (tab) => {
-  if (!tab.showCount) return null
-  return ticketCounts.value[tab.countKey] || 0
-}
+// ============================================================
+// CICLO DE VIDA
+// ============================================================
 
 onMounted(() => {
   fetchTickets()
-  fetchTicketCounts()
   
-  // Actualizar conteos cada 30 segundos
-  setInterval(fetchTicketCounts, 30000)
+  // Escuchar eventos de actualización de tickets
+  // Cuando se acepte o rechace una transferencia, se recarga la tabla
+  window.addEventListener('ticket-updated', fetchTickets)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('ticket-updated', fetchTickets)
 })
 </script>
 
