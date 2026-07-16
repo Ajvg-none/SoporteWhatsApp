@@ -13,6 +13,12 @@ const upload = require('../middlewares/upload');
 router.get('/', verifyToken, ticketController.getTickets);
 
 /**
+ * GET /api/tickets/counts
+ * Obtener conteo de tickets por estado
+ */
+router.get('/counts', verifyToken, ticketController.getTicketCounts);
+
+/**
  * GET /api/tickets/:id
  * Detalle completo de un ticket
  * Requiere autenticación

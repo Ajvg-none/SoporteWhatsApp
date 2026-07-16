@@ -40,22 +40,32 @@
         </div>
       </div>
 
-      <!-- Tabs de Estado -->
-      <div class="mt-5 pt-4 border-t border-slate-100/80 dark:border-slate-800/80">
-        <nav class="flex space-x-2 overflow-x-auto pb-1">
-          <button
-            v-for="tab in tabs"
-            :key="tab.value"
-            @click="handleTabChange(tab.value)"
-            class="py-2 px-3.5 rounded-xl font-bold text-[11px] tracking-wider uppercase whitespace-nowrap transition-all duration-200 border cursor-pointer"
-            :class="selectedStatus === tab.value
-              ? 'bg-sky-50 dark:bg-sky-950/40 text-primary border-sky-100 dark:border-sky-900/30 shadow-xs shadow-sky-100/50'
-              : 'border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50/60 dark:hover:bg-slate-800/50'"
-          >
-            {{ tab.label }}
-          </button>
-        </nav>
-      </div>
+<!-- Tabs de Estado -->
+<div class="mt-5 pt-4 border-t border-slate-100/80 dark:border-slate-800/80">
+  <nav class="flex space-x-2 overflow-x-auto pb-1">
+    <button
+      v-for="tab in tabs"
+      :key="tab.value"
+      @click="handleTabChange(tab.value)"
+      class="py-2 px-3.5 rounded-xl font-bold text-[11px] tracking-wider uppercase whitespace-nowrap transition-all duration-200 border cursor-pointer flex items-center gap-2"
+      :class="selectedStatus === tab.value
+        ? 'bg-sky-50 dark:bg-sky-950/40 text-primary border-sky-100 dark:border-sky-900/30 shadow-xs shadow-sky-100/50'
+        : 'border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50/60 dark:hover:bg-slate-800/50'"
+    >
+      <span>{{ tab.label }}</span>
+      <!-- Badge con contador -->
+      <span
+        v-if="tab.showCount && getCountForTab(tab) > 0"
+        class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-black"
+        :class="selectedStatus === tab.value
+          ? 'bg-primary text-white'
+          : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'"
+      >
+        {{ getCountForTab(tab) }}
+      </span>
+    </button>
+  </nav>
+</div>
     </BaseCard>
 
     <!-- Tabla de Tickets -->
@@ -227,11 +237,19 @@ import BaseBadge from '@/components/base/BaseBadge.vue'
 
 const authStore = useAuthStore()
 
-const tickets = ref([])
+const tickets = ref([]) 
 const loading = ref(false)
 const errorMsg = ref('')
 const searchQuery = ref('')
 const selectedStatus = ref('todos')
+const ticketCounts = ref({
+  nuevos: 0,
+  asignados: 0,
+  esperando: 0,
+  resueltos: 0,
+  cerrados: 0,
+  misAsignados: 0
+})
 
 const pagination = ref({
   page: 1,
@@ -245,7 +263,8 @@ const ticketsKey = computed(() => `${selectedStatus.value}_${pagination.value.pa
 
 const tabs = [
   { label: 'Todos activos', value: 'todos' },
-  { label: 'Nuevos', value: 'nuevo' },
+  { label: 'Nuevos', value: 'nuevo', showCount: true, countKey: 'nuevos' },
+  { label: 'Mi Asignación', value: 'mis_asignados', showCount: true, countKey: 'misAsignados' },
   { label: 'Asignados', value: 'asignado' },
   { label: 'Esperando respuesta', value: 'esperando' },
   { label: 'Resueltos', value: 'resuelto' },
@@ -262,11 +281,13 @@ const fetchTickets = async () => {
       buscar: searchQuery.value || undefined
     }
 
-    // Si el tab seleccionado es distinto de 'todos', se envía el filtro de estado.
-    if (selectedStatus.value !== 'todos') {
+    // Si el tab seleccionado es 'mis_asignados', enviar filtro especial
+    if (selectedStatus.value === 'mis_asignados') {
+      params.mis_tickets = 'true'
+    } else if (selectedStatus.value !== 'todos') {
       params.estado = selectedStatus.value
     }
-    
+
     const response = await api.get('/tickets', { params })
     if (response.data && response.data.success) {
       tickets.value = response.data.data
@@ -279,6 +300,17 @@ const fetchTickets = async () => {
     errorMsg.value = error.response?.data?.error || 'Error de conexión con la API.'
   } finally {
     loading.value = false
+  }
+}
+
+const fetchTicketCounts = async () => {
+  try {
+    const response = await api.get('/tickets/counts')
+    if (response.data && response.data.success) {
+      ticketCounts.value = response.data.data
+    }
+  } catch (error) {
+    console.error('Error fetching ticket counts:', error)
   }
 }
 
@@ -332,8 +364,17 @@ const formatDate = (dateStr) => {
   })
 }
 
+const getCountForTab = (tab) => {
+  if (!tab.showCount) return null
+  return ticketCounts.value[tab.countKey] || 0
+}
+
 onMounted(() => {
   fetchTickets()
+  fetchTicketCounts()
+  
+  // Actualizar conteos cada 30 segundos
+  setInterval(fetchTicketCounts, 30000)
 })
 </script>
 
