@@ -5,6 +5,18 @@ const { verifyToken, checkSupervisorRole } = require('../middlewares/auth');
 const { checkTicketOwnership } = require('../middlewares/ownership');
 const upload = require('../middlewares/upload');
 
+
+/**
+ * GET /api/tickets/transferencias-pendientes
+ * Obtener transferencias pendientes para el técnico actual
+ * ✅ Requiere: verifyToken
+ */
+router.get(
+  '/transferencias-pendientes',
+  verifyToken,
+  ticketController.getTransferenciasPendientes
+);
+
 /**
  * GET /api/tickets
  * Listado paginado de tickets con filtros

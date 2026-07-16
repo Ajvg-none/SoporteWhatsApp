@@ -77,6 +77,11 @@ export async function getTechnicians() {
   return response.data
 }
 
+export async function getTransferenciasPendientes() {
+  const response = await api.get('/tickets/transferencias-pendientes')
+  return response.data
+}
+
 export default {
   changeStatus,
   closeTicket,
@@ -84,5 +89,6 @@ export default {
   acceptTransfer,
   rejectTransfer,
   forceAssign,
-  getTechnicians
+  getTechnicians,
+  getTransferenciasPendientes
 }
