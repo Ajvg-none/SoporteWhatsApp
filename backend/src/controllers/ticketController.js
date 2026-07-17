@@ -1488,3 +1488,44 @@ exports.getTransferenciasPendientes = async (req, res) => {
     });
   }
 };
+
+/**
+ * GET /api/tickets/counts
+ * Obtener conteo de tickets por estado para el usuario actual
+ */
+exports.getTicketCounts = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userRole = req.user.rol;
+
+    // Si es técnico, usualmente contamos solo sus tickets asignados o nuevos globales
+    // Si es supervisor, contamos todos. Aquí te dejo una base útil:
+    const whereNuevo = { estado: 'nuevo' };
+    const whereAsignado = userRole === 'supervisor' ? { estado: 'asignado' } : { estado: 'asignado', tecnicoAsignadoId: userId };
+    const whereEsperando = userRole === 'supervisor' ? { estado: 'esperando' } : { estado: 'esperando', tecnicoAsignadoId: userId };
+    const whereResuelto = userRole === 'supervisor' ? { estado: 'resuelto' } : { estado: 'resuelto', tecnicoAsignadoId: userId };
+
+    const [nuevos, asignados, esperando, resueltos] = await Promise.all([
+      prisma.ticket.count({ where: whereNuevo }),
+      prisma.ticket.count({ where: whereAsignado }),
+      prisma.ticket.count({ where: whereEsperando }),
+      prisma.ticket.count({ where: whereResuelto }),
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        nuevo: nuevos,
+        asignado: asignados,
+        esperando: esperando,
+        resuelto: resueltos
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error en getTicketCounts:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error interno del servidor'
+    });
+  }
+};
