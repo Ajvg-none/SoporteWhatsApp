@@ -10,8 +10,8 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const http = require('http'); // 🛠️ NUEVO: Necesario para integrar Express y Socket.IO
 const { PrismaClient } = require('@prisma/client');
-
 
 // Middlewares de autenticación (S1-B04)
 const { verifyToken, checkSupervisorRole } = require('./middlewares/auth');
@@ -24,6 +24,7 @@ const webhookRoutes = require('./routes/webhook');
 // 3. INICIALIZACIÓN
 // ============================================================
 const app = express();
+const server = http.createServer(app); // 🛠️ NUEVO: Crear servidor HTTP nativo acoplado a Express
 const prisma = new PrismaClient();
 
 // ============================================================
@@ -113,16 +114,14 @@ app.use('/api/auth', authRoutes);
 app.use('/api/webhooks', webhookRoutes);
 
 // 7.3. Tickets (S1-B09, S1-B10, S1-B11, S1-B12)
-// DESCOMENTAR CUANDO TENGAMOS EL CONTROLADOR
 const ticketRoutes = require('./routes/tickets');
 app.use('/api/tickets', ticketRoutes);
 
- //7.4. Contactos (S1-B13)
- //DESCOMENTAR CUANDO TENGAMOS EL CONTROLADOR
- const contactRoutes = require('./routes/contacts');
- app.use('/api/contactos', contactRoutes);
+// 7.4. Contactos (S1-B13)
+const contactRoutes = require('./routes/contacts');
+app.use('/api/contactos', contactRoutes);
 
- // 7.5. Usuarios (S3-B06, S3-B07)
+// 7.5. Usuarios (S3-B06, S3-B07)
 const userRoutes = require('./routes/users');
 app.use('/api/users', userRoutes);
 
@@ -152,23 +151,24 @@ app.use((err, req, res, next) => {
 });
 
 // ============================================================
-// 10. INICIO DEL SERVIDOR
+// 10. INICIO DEL SERVIDOR Y WEBSOCKETS
 // ============================================================
 const PORT = process.env.PORT || 3000;
 
-
+// Importar e inicializar el servicio de Socket con el servidor HTTP
 const socketService = require('./services/socketService');
-
+socketService.initialize(server); // 🛠️ NUEVO: Asociar Socket.IO al servidor HTTP
 
 // ============================================================
-// 7. CRONJOBS Y SERVICIOS PROGRAMADOS
+// 11. CRONJOBS Y SERVICIOS PROGRAMADOS
 // ============================================================
 
-// 7.1. Iniciar cron de limpieza (S3-B05)
+// Iniciar cron de limpieza (S3-B05)
 const { iniciarCronLimpieza } = require('./cron/cleanupCron');
 iniciarCronLimpieza();
 
-app.listen(PORT, () => {
+// 🛠️ IMPORTANTE: Escuchamos el puerto con "server", NO con "app"
+server.listen(PORT, () => {
   console.log('\n========================================');
   console.log('🚀 SOPORTEWHATSAPP - BACKEND');
   console.log('========================================');
@@ -183,7 +183,7 @@ app.listen(PORT, () => {
 });
 
 // ============================================================
-// 11. CIERRE GRACIOSO
+// 12. CIERRE GRACIOSO
 // ============================================================
 process.on('SIGINT', async () => {
   console.log('\n🛑 Cerrando servidor...');
