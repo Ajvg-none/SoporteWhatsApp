@@ -553,24 +553,6 @@ try {
       }
     });
 
-    // 9. Registrar en auditoría
-    await prisma.auditoria.create({
-      data: {
-        ticketId: parseInt(id),
-        usuarioId: userId,
-        accion: 'respuesta',
-        detalle: {
-          mensaje_id: mensaje.id,
-          whatsapp_message_id: whatsappMessageId,
-          numero_cliente: ticket.contacto.numero_telefono,
-          tiene_archivo: !!archivo,
-          tipo_archivo: archivo ? archivo.mimetype : null,
-          nombre_archivo: archivo ? archivo.originalname : null
-        },
-        fechaHora: new Date()
-      }
-    });
-
     // 10. Cambiar estado a ESPERANDO RESPUESTA si corresponde
     if (ticket.estado === 'nuevo' || ticket.estado === 'asignado') {
       await prisma.ticket.update({

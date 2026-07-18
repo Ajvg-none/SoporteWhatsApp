@@ -207,7 +207,7 @@
                       <div class="flex-1 min-w-0 pt-1 flex justify-between space-x-4">
                         <div>
                           <p class="text-xs font-semibold text-slate-500 dark:text-slate-300">
-                            Acción: <b class="text-slate-800 dark:text-white capitalize font-bold">{{ formatAuditAction(item.accion) }}</b> por <span class="font-bold text-slate-700 dark:text-white">{{ item.usuarioNombre }}</span>
+                            <b class="text-slate-800 dark:text-white capitalize font-bold">{{ formatAuditAction(item.accion) }}</b> por <span class="font-bold text-slate-700 dark:text-white">{{ item.usuarioNombre }}</span>
                           </p>
                           <p class="text-[10px] font-medium text-slate-400 dark:text-slate-400 mt-1">
                             {{ formatAuditDetails(item) }}
@@ -1278,15 +1278,8 @@ const formatAuditAction = (action) => {
 }
 
 const formatAuditDetails = (item) => {
-  const det = item.detalle
-  if (!det) return ''
-  if (item.accion === 'asignacion') {
-    return `Asignado por: ${det.asignado_por || 'técnico'}`
-  }
-  if (item.accion === 'respuesta') {
-    return `Mensaje ${det.tiene_archivo ? `con archivo (${det.tipo_archivo})` : 'de texto'}`
-  }
-  return JSON.stringify(det)
+  // Se retorna vacío para no duplicar la información que ya explica el título de la acción
+  return ''
 }
 
 onMounted(() => {
