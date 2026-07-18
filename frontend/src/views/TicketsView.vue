@@ -338,6 +338,13 @@ const handleTabChange = (status) => {
   fetchTickets()
 }
 
+
+const getCountForTab = (tab) => {
+  if (!tab.countKey) return 0
+  return ticketCounts.value[tab.countKey] || 0
+}
+
+
 const changePage = (newPage) => {
   pagination.value.page = newPage
   fetchTickets()
@@ -378,6 +385,7 @@ const formatDate = (dateStr) => {
 
 onMounted(() => {
   fetchTickets()
+  fetchTicketCounts()
   
   // Escuchar eventos de actualización de tickets
   // Cuando se acepte o rechace una transferencia, se recarga la tabla
@@ -387,6 +395,7 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('ticket-updated', fetchTickets)
 })
+
 </script>
 
 <style scoped>

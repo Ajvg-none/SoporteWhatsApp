@@ -20,6 +20,8 @@ model Usuario {
   mensajes                 Mensaje[]
   solicitudesTransferencia Ticket[]    @relation("SolicitudesTransferencia")
   ticketsAsignados         Ticket[]    @relation("TicketsAsignados")
+  numerosExcluidos NumeroExcluido[]
+  mensajesDirectos   MensajeDirecto[]
 
   @@index([email], map: "idx_usuarios_email")
   @@index([rol], map: "idx_usuarios_rol")
@@ -98,4 +100,40 @@ model Auditoria {
   @@index([ticketId], map: "idx_auditoria_ticket_id")
   @@index([usuarioId], map: "idx_auditoria_usuario_id")
   @@map("auditoria")
+}
+
+
+model NumeroExcluido {
+  id         Int       @id @default(autoincrement())
+  numero     String    @unique @db.VarChar(30)
+  motivo     String?   @db.VarChar(255)
+  creadoPor  Int
+  creadoEn   DateTime? @default(now()) @map("creado_en") @db.Timestamp(6)
+  creadoPorUsuario Usuario @relation(fields: [creadoPor], references: [id])
+  mensajesDirectos     MensajeDirecto[]
+
+  @@index([numero], map: "idx_numeros_excluidos_numero")
+  @@map("numeros_excluidos")
+}
+
+
+model MensajeDirecto {
+  id                Int       @id @default(autoincrement())
+  numeroRemitente   String    @map("numero_remitente") @db.VarChar(30)
+  contenido         String
+  tipo              String    @default("texto") @db.VarChar(20) // "texto" | "imagen" | "audio" | "documento"
+  urlAdjunto        String?   @map("url_adjunto") @db.VarChar(255)
+  remitente         String    @db.VarChar(20) // "cliente" | "supervisor"
+  supervisorId      Int?      @map("supervisor_id") // NULL si es del cliente
+  whatsappMessageId String?   @unique @map("whatsapp_message_id") @db.VarChar(255)
+  enviadoEn         DateTime? @default(now()) @map("enviado_en") @db.Timestamp(6)
+  leido             Boolean   @default(false)
+
+  numeroExcluido    NumeroExcluido @relation(fields: [numeroRemitente], references: [numero])
+  supervisor        Usuario?       @relation(fields: [supervisorId], references: [id])
+
+  @@index([numeroRemitente], map: "idx_mensajes_directos_numero")
+  @@index([enviadoEn], map: "idx_mensajes_directos_enviado_en")
+  @@index([leido], map: "idx_mensajes_directos_leido")
+  @@map("mensajes_directos")
 }

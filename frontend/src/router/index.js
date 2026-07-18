@@ -28,6 +28,19 @@ const routes = [
         name: 'Users',
         component: () => import('@/views/UsersView.vue'),
         meta: { requiresSupervisor: true }
+      },
+
+      {
+        path: 'excluidos',
+        name: 'ExcludedNumbers',
+        component: () => import('@/views/ExcludedNumbersView.vue'),
+        meta: { requiresSupervisor: true }
+      },
+      {
+        path: 'chat-directo',
+        name: 'DirectChat',
+        component: () => import('@/views/DirectChatView.vue'),
+        meta: { requiresSupervisor: true }
       }
     ]
   },

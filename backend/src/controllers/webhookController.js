@@ -34,6 +34,63 @@ exports.receiveWebhook = async (req, res) => {
         message: 'Group message ignored' 
       });
     }
+
+
+    // ============================================================
+    // 2.5  REGLA DE EXCLUSIÓN / CHAT PRIVADO
+    // ============================================================
+    const { esNumeroExcluido, obtenerTipoExclusion } = require('./excludedNumberController');
+
+    const numeroExcluido = await esNumeroExcluido(from);
+
+    if (numeroExcluido) {
+      // Verificar si es un chat privado o simplemente excluido
+      const tipo = await obtenerTipoExclusion(from);
+      
+      if (tipo === 'chat_privado') {
+        console.log(`💬 Chat privado detectado: ${from}`);
+        
+        // Guardar el mensaje en la tabla de mensajes directos
+        const { PrismaClient } = require('@prisma/client');
+        const prisma = new PrismaClient();
+        
+        await prisma.mensajeDirecto.create({
+          data: {
+            numeroRemitente: from.replace(/@c\.us|@g\.us/gi, ''),
+            contenido: body || '[Archivo/Imagen]',
+            tipo: tipoMensaje || 'texto',
+            remitente: 'cliente',
+            whatsappMessageId: whatsappMessageId,
+            enviadoEn: timestamp ? new Date(parseInt(timestamp) * 1000) : new Date()
+          }
+        });
+        
+        // Notificar a todos los supervisores conectados
+        const socketService = require('../services/socketService');
+        socketService.notifyAllSupervisors('nuevo_mensaje_directo', {
+          numeroRemitente: from,
+          contenido: body || '[Archivo/Imagen]',
+          timestamp: new Date()
+        });
+        
+        console.log(`✅ Mensaje directo guardado y supervisores notificados`);
+        
+        return res.status(200).json({
+          status: 'ok',
+          message: 'Direct chat message saved',
+          reason: 'chat_privado'
+        });
+      }
+  
+  // Si es tipo "excluido" normal, simplemente ignorar
+  console.log(`🚫 Mensaje ignorado: ${from} está en la lista de números excluidos`);
+  return res.status(200).json({
+    status: 'ok',
+    message: 'Message ignored (excluded number)',
+    reason: 'excluded_number'
+  });
+}
+
     
     // ============================================================
     // 2. EXTRAER DATOS DEL MENSAJE
