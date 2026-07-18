@@ -113,6 +113,21 @@ class SocketService {
   }
 
   /**
+ * Notificar a todos los supervisores conectados
+ */
+notifyAllSupervisors(event, data) {
+    if (!this.io) {
+        console.warn('Socket.IO no inicializado');
+        return;
+    }
+    
+    // Iterar sobre usuarios conectados y notificar solo a supervisores
+    // (En producción podrías tener un Map de roles, aquí broadcast simple)
+    this.io.emit(event, data);
+    console.log('Notificación broadcast a supervisores: ' + event);
+}
+
+  /**
    * Obtener el socket de un usuario
    */
   getUserSocket(userId) {

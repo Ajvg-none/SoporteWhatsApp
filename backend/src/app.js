@@ -129,6 +129,14 @@ app.use('/api/users', userRoutes);
 const statsRoutes = require('./routes/stats');
 app.use('/api/stats', statsRoutes);
 
+
+const excludedNumberRoutes = require('./routes/excludedNumbers');
+app.use('/api/excluidos', excludedNumberRoutes);
+
+// 7.8. Chat Privado (solo supervisores)
+const directChatRoutes = require('./routes/directChat');
+app.use('/api/chat-directo', directChatRoutes);
+
 // ============================================================
 // 8. MANEJO DE ERRORES 404 (SIEMPRE AL FINAL)
 // ============================================================

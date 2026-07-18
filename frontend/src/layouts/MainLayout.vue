@@ -43,6 +43,28 @@
             <svg class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
             Usuarios
           </router-link>
+
+          <router-link
+            to="/excluidos"
+            class="flex items-center px-4 py-3 text-sm font-semibold text-slate-650 dark:text-slate-400 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-primary dark:hover:text-primary transition-all duration-200 group"
+            :class="[ $route.path === '/excluidos' ? 'bg-sky-50 dark:bg-sky-950/40 !text-primary border border-sky-100/30 dark:border-sky-900/20' : 'border border-transparent' ]"
+          >
+            <svg class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
+            Números Excluidos
+          </router-link>
+
+          <router-link
+            to="/chat-directo"
+            class="flex items-center px-4 py-3 text-sm font-semibold text-slate-650 dark:text-slate-400 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-primary dark:hover:text-primary transition-all duration-200 group"
+            :class="[ $route.path === '/chat-directo' ? 'bg-sky-50 dark:bg-sky-950/40 !text-primary border border-sky-100/30 dark:border-sky-900/20' : 'border border-transparent' ]"
+          >
+            <svg class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+            Chat Privado
+          </router-link>
         </template>
       </nav>
 
@@ -140,7 +162,9 @@ const currentTitle = computed(() => {
     'Tickets': 'Gestión de Tickets',
     'TicketDetail': 'Detalle del Ticket',
     'Dashboard': 'Panel de Control',
-    'Users': 'Administración de Usuarios'
+    'Users': 'Administración de Usuarios',
+    'ExcludedNumbers': 'Números Excluidos',
+    'DirectChat': 'Chat Privado VIP'
   }
   return titles[router.currentRoute.value.name] || 'SoporteWhatsApp'
 })
