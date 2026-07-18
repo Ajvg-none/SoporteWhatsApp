@@ -59,10 +59,12 @@
       <!-- Badge con contador -->
       <span
         v-if="tab.showCount && getCountForTab(tab) > 0"
-        class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-black"
+        class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-black transition-colors duration-200"
         :class="selectedStatus === tab.value
-          ? 'bg-primary text-white'
-          : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'"
+          ? 'bg-sky-500 text-white' 
+          : tab.value === 'nuevo'
+            ? 'bg-sky-100 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 border border-sky-200/50 dark:border-sky-900/30'
+            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'"
       >
         {{ getCountForTab(tab) }}
       </span>
@@ -322,6 +324,12 @@ const fetchTicketCounts = async () => {
   }
 }
 
+// 🛠️ AGREGA ESTA FUNCIÓN AQUÍ:
+const getCountForTab = (tab) => {
+  if (!tab.countKey) return 0;
+  return ticketCounts.value[tab.countKey] || 0;
+}
+
 // Búsqueda con debounce rudimentario
 let searchTimeout = null
 const handleSearchInput = () => {
@@ -378,9 +386,7 @@ const formatDate = (dateStr) => {
 
 onMounted(() => {
   fetchTickets()
-  
-  // Escuchar eventos de actualización de tickets
-  // Cuando se acepte o rechace una transferencia, se recarga la tabla
+  fetchTicketCounts()
   window.addEventListener('ticket-updated', fetchTickets)
 })
 
