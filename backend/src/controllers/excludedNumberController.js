@@ -45,8 +45,11 @@ exports.getExcludedNumbers = async (req, res) => {
       data: numeros.map(n => ({
         id: n.id,
         numero: n.numero,
+        nombre: n.nombre,
         numeroFormateado: formatearNumeroVisual(n.numero),
         motivo: n.motivo,
+        tipo: n.tipo,
+        tipoLabel: n.tipo === 'chat_privado' ? 'Chat Privado' : 'Excluido',
         creadoPor: n.creadoPorUsuario?.nombre || 'Desconocido',
         creadoEn: n.creadoEn
       }))
@@ -60,11 +63,11 @@ exports.getExcludedNumbers = async (req, res) => {
 /**
  * POST /api/excluidos
  * Agregar un número a la lista de excluidos
- * Body: { numero, motivo? }
+ * Body: { numero, nombre?, motivo?, tipo? }
  */
 exports.addExcludedNumber = async (req, res) => {
   try {
-    const { numero, motivo } = req.body;
+    const { numero, nombre, motivo, tipo = 'excluido' } = req.body;
     const userId = req.user.id;
 
     if (!numero || numero.trim() === '') {
@@ -91,10 +94,11 @@ exports.addExcludedNumber = async (req, res) => {
     const nuevo = await prisma.numeroExcluido.create({
       data: {
         numero: numeroNormalizado,
+        nombre: nombre?.trim() || null,
         motivo: motivo?.trim() || null,
-        tipo: req.body.tipo || 'excluido', // ← NUEVO: aceptar tipo
+        tipo: tipo,
         creadoPor: userId
-        },
+      },
       include: {
         creadoPorUsuario: {
           select: { id: true, nombre: true }
@@ -104,18 +108,75 @@ exports.addExcludedNumber = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Número agregado a la lista de excluidos',
+      message: 'Número agregado exitosamente',
       data: {
         id: nuevo.id,
         numero: nuevo.numero,
+        nombre: nuevo.nombre,
         numeroFormateado: formatearNumeroVisual(nuevo.numero),
         motivo: nuevo.motivo,
+        tipo: nuevo.tipo,
         creadoPor: nuevo.creadoPorUsuario?.nombre || 'Desconocido',
         creadoEn: nuevo.creadoEn
       }
     });
   } catch (error) {
     console.error('❌ Error en addExcludedNumber:', error);
+    res.status(500).json({ success: false, error: 'Error interno del servidor' });
+  }
+};
+
+/**
+ * PUT /api/excluidos/:id
+ * Actualizar un número excluido (nombre, motivo, tipo)
+ */
+exports.updateExcludedNumber = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nombre, motivo, tipo } = req.body;
+
+    const existente = await prisma.numeroExcluido.findUnique({
+      where: { id: parseInt(id) }
+    });
+
+    if (!existente) {
+      return res.status(404).json({
+        success: false,
+        error: 'Número excluido no encontrado'
+      });
+    }
+
+    const dataToUpdate = {};
+    if (nombre !== undefined) dataToUpdate.nombre = nombre?.trim() || null;
+    if (motivo !== undefined) dataToUpdate.motivo = motivo?.trim() || null;
+    if (tipo !== undefined) dataToUpdate.tipo = tipo;
+
+    const actualizado = await prisma.numeroExcluido.update({
+      where: { id: parseInt(id) },
+      data: dataToUpdate,
+      include: {
+        creadoPorUsuario: {
+          select: { id: true, nombre: true }
+        }
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Número actualizado exitosamente',
+      data: {
+        id: actualizado.id,
+        numero: actualizado.numero,
+        nombre: actualizado.nombre,
+        numeroFormateado: formatearNumeroVisual(actualizado.numero),
+        motivo: actualizado.motivo,
+        tipo: actualizado.tipo,
+        creadoPor: actualizado.creadoPorUsuario?.nombre || 'Desconocido',
+        creadoEn: actualizado.creadoEn
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error en updateExcludedNumber:', error);
     res.status(500).json({ success: false, error: 'Error interno del servidor' });
   }
 };
@@ -177,4 +238,17 @@ exports.obtenerTipoExclusion = async (numero) => {
     where: { numero: numeroNormalizado }
   });
   return registro ? registro.tipo : null;
+};
+
+/**
+ * Obtiene el alias (nombre) de un número excluido
+ * @param {string} numero - Número a verificar
+ * @returns {Promise<string|null>} - Alias del número o null
+ */
+exports.obtenerAliasNumero = async (numero) => {
+  const numeroNormalizado = normalizarNumero(numero);
+  const registro = await prisma.numeroExcluido.findUnique({
+    where: { numero: numeroNormalizado }
+  });
+  return registro ? registro.nombre : null;
 };
