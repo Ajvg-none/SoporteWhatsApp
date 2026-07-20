@@ -106,7 +106,9 @@ model Auditoria {
 model NumeroExcluido {
   id         Int       @id @default(autoincrement())
   numero     String    @unique @db.VarChar(30)
+  nombre     String?   @db.VarChar(100)
   motivo     String?   @db.VarChar(255)
+  tipo       String    @default("excluido") @db.VarChar(20) // "excluido" | "chat_privado"
   creadoPor  Int
   creadoEn   DateTime? @default(now()) @map("creado_en") @db.Timestamp(6)
   creadoPorUsuario Usuario @relation(fields: [creadoPor], references: [id])

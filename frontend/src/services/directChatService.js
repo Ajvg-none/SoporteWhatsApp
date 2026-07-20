@@ -1,3 +1,5 @@
+// frontend/src/services/directChatService.js
+
 import api from './api'
 
 /**
@@ -5,6 +7,23 @@ import api from './api'
  */
 export async function getDirectMessages() {
   const response = await api.get('/chat-directo')
+  return response.data
+}
+
+/**
+ * Obtener lista de números con chat privado (para sidebar)
+ */
+export async function getDirectChatNumbers() {
+  const response = await api.get('/chat-directo/numbers')
+  return response.data
+}
+
+/**
+ * Obtener mensajes de un número específico
+ * @param {string} numero - Número de teléfono
+ */
+export async function getMessagesByNumber(numero) {
+  const response = await api.get(`/chat-directo/${encodeURIComponent(numero)}`)
   return response.data
 }
 
@@ -27,6 +46,8 @@ export async function getUnreadCount() {
 
 export default {
   getDirectMessages,
+  getDirectChatNumbers,
+  getMessagesByNumber,
   sendDirectMessage,
   getUnreadCount
 }

@@ -10,10 +10,20 @@ export async function getExcludedNumbers() {
 
 /**
  * Agregar un número a la lista de excluidos
- * @param {Object} data - { numero, motivo? }
+ * @param {Object} data - { numero, nombre?, motivo?, tipo? }
  */
 export async function addExcludedNumber(data) {
   const response = await api.post('/excluidos', data)
+  return response.data
+}
+
+/**
+ * Actualizar un número excluido
+ * @param {number} id - ID del número excluido
+ * @param {Object} data - { nombre?, motivo?, tipo? }
+ */
+export async function updateExcludedNumber(id, data) {
+  const response = await api.put(`/excluidos/${id}`, data)
   return response.data
 }
 
@@ -29,5 +39,6 @@ export async function removeExcludedNumber(id) {
 export default {
   getExcludedNumbers,
   addExcludedNumber,
+  updateExcludedNumber,
   removeExcludedNumber
 }
