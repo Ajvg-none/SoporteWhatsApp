@@ -489,55 +489,63 @@ exports.sendMessage = async (req, res) => {
     }
 
     // 7. Enviar mensaje a OpenWA (integración REAL)
-const openwaService = require('../services/openwaService');
-let openwaResponse = null;
-let whatsappMessageId = null;
+    const openwaService = require('../services/openwaService');
+    let openwaResponse = null;
+    let whatsappMessageId = null;
+    let envioExitoso = false;
+    let errorEnvio = null;
 
-try {
-  const numeroCliente = ticket.contacto.numero_telefono;
-  const texto = contenido || '';
+    try {
+      const numeroCliente = ticket.contacto.numero_telefono;
+      const texto = contenido || '';
 
-  if (archivo) {
-    // Construir URL pública del archivo
-    const baseURL = `${req.protocol}://${req.get('host')}`;
-    const urlArchivo = `${baseURL}${urlAdjunto}`;
-    
-    openwaResponse = await openwaService.sendMedia(
-      numeroCliente,
-      texto,
-      {
-        url: urlArchivo,
-        mimeType: archivo.mimetype,
-        fileName: archivo.originalname
+      if (archivo) {
+        // Construir URL pública del archivo
+        const baseURL = `${req.protocol}://${req.get('host')}`;
+        const urlArchivo = `${baseURL}${urlAdjunto}`;
+        
+        openwaResponse = await openwaService.sendMedia(
+          numeroCliente,
+          texto,
+          {
+            url: urlArchivo,
+            mimeType: archivo.mimetype,
+            fileName: archivo.originalname
+          }
+        );
+        console.log(`📎 Archivo enviado a OpenWA: ${archivo.originalname}`);
+      } else {
+        openwaResponse = await openwaService.sendMessage(
+          numeroCliente,
+          texto
+        );
       }
-    );
-    console.log(`📎 Archivo enviado a OpenWA: ${archivo.originalname}`);
-  } else {
-    openwaResponse = await openwaService.sendMessage(
-      numeroCliente,
-      texto
-    );
-  }
 
-  whatsappMessageId = openwaResponse?.messageId || openwaResponse?.id || `msg_${Date.now()}`;
-  console.log(`✅ Mensaje enviado a OpenWA, ID: ${whatsappMessageId}`);
+      whatsappMessageId = openwaResponse?.messageId || openwaResponse?.id || `msg_${Date.now()}`;
+      envioExitoso = true;
+      console.log(`✅ Mensaje enviado a OpenWA, ID: ${whatsappMessageId}`);
 
-} catch (error) {
-  console.error('❌ Error enviando mensaje a OpenWA:', error.message);
-  // Generar ID de fallback para no perder el mensaje en la BD
-  whatsappMessageId = `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  // Continuamos con el guardado en BD aunque falle OpenWA
-}
+    } catch (error) {
+      console.error('❌ Error enviando mensaje a OpenWA:', error.message);
+      errorEnvio = error.response?.data?.message || error.message || 'Error al enviar por WhatsApp';
+      // ID de fallback para no perder el mensaje en la BD (queda marcado como NO ENVIADO)
+      whatsappMessageId = `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    }
 
     // 8. Guardar mensaje en la base de datos
+    const contenidoFinal = contenido && contenido.trim() !== '' 
+      ? contenido.trim() 
+      : `[Archivo: ${archivo?.originalname || 'multimedia'}]`;
+    const contenidoGuardado = envioExitoso
+      ? contenidoFinal
+      : `[NO ENVIADO] ${contenidoFinal}`;
+
     const mensaje = await prisma.mensaje.create({
       data: {
         ticketId: parseInt(id),
         remitente: 'tecnico',
         tecnicoId: userId,
-        contenido: contenido && contenido.trim() !== '' 
-          ? contenido.trim() 
-          : `[Archivo: ${archivo?.originalname || 'multimedia'}]`,
+        contenido: contenidoGuardado,
         tipo: tipo,
         urlAdjunto: urlAdjunto,
         whatsappMessageId: whatsappMessageId,
@@ -553,9 +561,9 @@ try {
       }
     });
 
-    // 9. Notificar en vivo a los agentes (mensaje enviado por el técnico)
+    // 9. Notificar en vivo a los agentes
     const socketService = require('../services/socketService');
-    socketService.broadcast('nuevo_mensaje_ticket', {
+    const payloadSocket = {
       ticketId: parseInt(id),
       numeroCliente: ticket.numeroCliente,
       contenido: mensaje.contenido,
@@ -564,10 +572,19 @@ try {
       remitente: 'tecnico',
       tecnicoNombre: mensaje.tecnico?.nombre || usuario.nombre,
       enviadoEn: mensaje.enviadoEn
-    });
+    };
 
-    // 10. Cambiar estado a ESPERANDO RESPUESTA si corresponde
-    if (ticket.estado === 'nuevo' || ticket.estado === 'asignado') {
+    if (envioExitoso) {
+      socketService.broadcast('nuevo_mensaje_ticket', payloadSocket);
+    } else {
+      // El mensaje se guarda marcado como [NO ENVIADO], pero el envío real falló:
+      // avisar en vivo para que el agente lo sepa de inmediato.
+      socketService.broadcast('envio_fallido', { ...payloadSocket, error: errorEnvio });
+      socketService.broadcast('nuevo_mensaje_ticket', payloadSocket);
+    }
+
+    // 10. Cambiar estado a ESPERANDO RESPUESTA SOLO si el envío fue exitoso
+    if (envioExitoso && (ticket.estado === 'nuevo' || ticket.estado === 'asignado')) {
       await prisma.ticket.update({
         where: { id: parseInt(id) },
         data: {
@@ -578,11 +595,15 @@ try {
       console.log(`🔄 Ticket #${id} cambiado a ESPERANDO RESPUESTA`);
     }
 
-    // 11. Respuesta exitosa
+    // 11. Respuesta
     res.status(201).json({
       success: true,
-      message: 'Mensaje enviado correctamente',
+      message: envioExitoso
+        ? 'Mensaje enviado correctamente'
+        : 'Mensaje guardado pero NO se pudo enviar por WhatsApp',
       data: {
+        enviado: envioExitoso,
+        error: envioExitoso ? null : errorEnvio,
         mensaje: {
           id: mensaje.id,
           ticketId: mensaje.ticketId,
