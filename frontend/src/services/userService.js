@@ -30,6 +30,16 @@ export async function desactivarUsuario(userId) {
 }
 
 /**
+ * ✅ NUEVO: Reactivar un usuario previamente desactivado
+ * @param {number} userId - ID del usuario a reactivar
+ * @returns {Promise} Resultado
+ */
+export async function reactivarUsuario(userId) {
+  const response = await api.patch(`/users/${userId}/reactivar`)
+  return response.data
+}
+
+/**
  * Alias para mantener compatibilidad con el resto de la app
  */
 export async function deleteUser(userId) {
@@ -40,5 +50,6 @@ export default {
   getUsers,
   createUser,
   desactivarUsuario,
+  reactivarUsuario,  // ← NUEVO
   deleteUser
 }
