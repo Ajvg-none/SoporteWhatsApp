@@ -3,26 +3,24 @@ const prisma = new PrismaClient();
 
 /**
  * GET /api/users
- * Listar todos los usuarios (solo supervisores)
+ * Listar todos los usuarios (activos e inactivos)
  * ✅ Requiere: verifyToken + checkSupervisorRole
  */
 exports.getUsers = async (req, res) => {
   try {
     const usuarios = await prisma.usuario.findMany({
-      where: { activo: true },
+      // ✅ Traemos TODOS los usuarios, sin filtrar por activo
       select: {
         id: true,
         nombre: true,
         email: true,
         rol: true,
-        activo: true
+        activo: true  // ← Importante: incluir el campo activo
       },
       orderBy: { id: 'asc' }
     });
-    
-    // CÓDIGO CORREGIDO:
+
     res.status(200).json({ success: true, data: usuarios });
-    
   } catch (error) {
     console.error("Error al obtener usuarios:", error);
     res.status(500).json({ error: "Error interno del servidor al obtener usuarios" });
@@ -38,7 +36,8 @@ exports.getTechnicians = async (req, res) => {
   try {
     const technicians = await prisma.usuario.findMany({
       where: {
-        rol: 'tecnico'
+        rol: 'tecnico',
+        activo: true  // Solo técnicos activos para asignaciones
       },
       select: {
         id: true,
@@ -54,7 +53,7 @@ exports.getTechnicians = async (req, res) => {
       data: technicians
     });
   } catch (error) {
-    console.error(' Error en getTechnicians:', error);
+    console.error('❌ Error en getTechnicians:', error);
     res.status(500).json({
       success: false,
       error: 'Error interno del servidor'
@@ -138,7 +137,6 @@ exports.createUser = async (req, res) => {
         rol: nuevoUsuario.rol
       }
     });
-
   } catch (error) {
     console.error("Error al crear/re-activar usuario:", error);
     res.status(500).json({ success: false, error: "Error interno del servidor" });
@@ -176,10 +174,49 @@ exports.desactivarUsuario = async (req, res) => {
       success: true,
       message: "Técnico desactivado correctamente. Sus registros históricos se conservan."
     });
-
   } catch (error) {
     console.error("Error en desactivarUsuario:", error);
     res.status(500).json({ error: "Error interno del servidor al desactivar el usuario" });
+  }
+};
+
+/**
+ * PATCH /api/users/:id/reactivar
+ * Reactivar un usuario previamente desactivado
+ * ✅ Requiere: verifyToken + checkSupervisorRole
+ */
+exports.reactivarUsuario = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const usuarioIdNumerico = Number(id);
+
+    // 1. Verificar que el usuario existe
+    const usuarioExistente = await prisma.usuario.findUnique({
+      where: { id: usuarioIdNumerico }
+    });
+
+    if (!usuarioExistente) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+
+    // 2. Verificar que esté desactivado
+    if (usuarioExistente.activo) {
+      return res.status(400).json({ error: "El usuario ya está activo" });
+    }
+
+    // 3. Reactivar
+    await prisma.usuario.update({
+      where: { id: usuarioIdNumerico },
+      data: { activo: true }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Usuario reactivado correctamente"
+    });
+  } catch (error) {
+    console.error("Error en reactivarUsuario:", error);
+    res.status(500).json({ error: "Error interno del servidor al reactivar el usuario" });
   }
 };
 
@@ -204,7 +241,6 @@ exports.deleteUser = async (req, res) => {
     }
 
     // 2. Seguridad: Evitar que un usuario se desactive a sí mismo
-    // (Asegúrate de que tu middleware de auth guarde el ID en req.user.id)
     if (req.user && req.user.id === usuarioIdNumerico) {
       return res.status(400).json({ error: "No puedes desactivar tu propia cuenta" });
     }
@@ -212,16 +248,15 @@ exports.deleteUser = async (req, res) => {
     // 3. ELIMINACIÓN LÓGICA (Soft Delete): Actualizamos 'activo' a false
     await prisma.usuario.update({
       where: { id: usuarioIdNumerico },
-      data: { 
-        activo: false 
+      data: {
+        activo: false
       }
     });
 
     // 4. Respuesta exitosa
-    res.status(200).json({ 
-      message: "Técnico desactivado correctamente. Sus registros históricos se conservan." 
+    res.status(200).json({
+      message: "Técnico desactivado correctamente. Sus registros históricos se conservan."
     });
-
   } catch (error) {
     console.error("Error en deleteUser:", error);
     res.status(500).json({ error: "Error interno del servidor al desactivar el usuario" });

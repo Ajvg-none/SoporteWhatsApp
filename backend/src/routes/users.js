@@ -12,7 +12,7 @@ router.get('/tecnicos', verifyToken, userController.getTechnicians);
 
 /**
  * GET /api/users
- * Listar todos los usuarios
+ * Listar todos los usuarios (activos e inactivos)
  * ✅ Requiere: verifyToken + checkSupervisorRole
  */
 router.get('/', verifyToken, checkSupervisorRole, userController.getUsers);
@@ -31,6 +31,13 @@ router.post('/', verifyToken, checkSupervisorRole, userController.createUser);
  * ✅ Requiere: verifyToken + checkSupervisorRole
  */
 router.patch('/:id/desactivar', verifyToken, checkSupervisorRole, userController.desactivarUsuario);
+
+/**
+ * PATCH /api/users/:id/reactivar
+ * Reactivar un usuario previamente desactivado
+ * ✅ Requiere: verifyToken + checkSupervisorRole
+ */
+router.patch('/:id/reactivar', verifyToken, checkSupervisorRole, userController.reactivarUsuario);
 
 /**
  * DELETE /api/users/:id
