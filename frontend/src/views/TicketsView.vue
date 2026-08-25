@@ -238,6 +238,7 @@ import BaseCard from '@/components/base/BaseCard.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseBadge from '@/components/base/BaseBadge.vue'
 import TransferenciasPendientes from '@/components/TransferenciasPendientes.vue'
+import socketService from '@/services/socketService'
 
 const authStore = useAuthStore()
 
@@ -390,10 +391,20 @@ onMounted(() => {
   // Escuchar eventos de actualización de tickets
   // Cuando se acepte o rechace una transferencia, se recarga la tabla
   window.addEventListener('ticket-updated', fetchTickets)
+
+  // Tiempo real: mensajes nuevos de clientes recargan la lista
+  if (!socketService.isConnected()) {
+    socketService.connect()
+  }
+  socketService.on('nuevo_mensaje_ticket', () => {
+    fetchTickets()
+    fetchTicketCounts()
+  })
 })
 
 onUnmounted(() => {
   window.removeEventListener('ticket-updated', fetchTickets)
+  socketService.off('nuevo_mensaje_ticket')
 })
 
 </script>

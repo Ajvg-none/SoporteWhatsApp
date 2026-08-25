@@ -627,7 +627,7 @@ variant="danger"
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
@@ -638,6 +638,7 @@ import BaseDropdown from '@/components/base/BaseDropdown.vue'
 import ConfirmDialog from '@/components/base/ConfirmDialog.vue'
 import BaseModal from '@/components/base/BaseModal.vue'
 import BaseTooltip from '@/components/base/BaseTooltip.vue'
+import socketService from '@/services/socketService'
 import {
   changeStatus,
   closeTicket,
@@ -1284,5 +1285,20 @@ const formatAuditDetails = (item) => {
 
 onMounted(() => {
   fetchTicketDetails()
+
+  // Tiempo real: si llega un mensaje nuevo de este ticket, recargar y bajar el scroll
+  if (!socketService.isConnected()) {
+    socketService.connect()
+  }
+  socketService.on('nuevo_mensaje_ticket', (payload) => {
+    if (payload && Number(payload.ticketId) === Number(route.params.id)) {
+      fetchTicketDetails()
+      scrollToBottom()
+    }
+  })
+})
+
+onUnmounted(() => {
+  socketService.off('nuevo_mensaje_ticket')
 })
 </script>

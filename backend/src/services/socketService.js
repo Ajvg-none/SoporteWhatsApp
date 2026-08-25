@@ -127,6 +127,19 @@ notifyAllSupervisors(event, data) {
     console.log('Notificación broadcast a supervisores: ' + event);
 }
 
+/**
+ * Broadcast a TODOS los sockets autenticados (técnicos y supervisores).
+ * Se usa para eventos globales como mensajes nuevos en tickets.
+ */
+broadcast(event, data) {
+    if (!this.io) {
+        console.warn('⚠️ Socket.IO no inicializado');
+        return;
+    }
+    this.io.emit(event, data);
+    console.log(`📨 Broadcast: ${event}`);
+}
+
   /**
    * Obtener el socket de un usuario
    */

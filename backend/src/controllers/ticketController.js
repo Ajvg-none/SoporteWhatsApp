@@ -519,7 +519,7 @@ try {
     );
   }
 
-  whatsappMessageId = openwaResponse?.id || openwaResponse?.messageId || `msg_${Date.now()}`;
+  whatsappMessageId = openwaResponse?.messageId || openwaResponse?.id || `msg_${Date.now()}`;
   console.log(`✅ Mensaje enviado a OpenWA, ID: ${whatsappMessageId}`);
 
 } catch (error) {
@@ -551,6 +551,19 @@ try {
           }
         }
       }
+    });
+
+    // 9. Notificar en vivo a los agentes (mensaje enviado por el técnico)
+    const socketService = require('../services/socketService');
+    socketService.broadcast('nuevo_mensaje_ticket', {
+      ticketId: parseInt(id),
+      numeroCliente: ticket.numeroCliente,
+      contenido: mensaje.contenido,
+      tipo: mensaje.tipo,
+      urlAdjunto: mensaje.urlAdjunto,
+      remitente: 'tecnico',
+      tecnicoNombre: mensaje.tecnico?.nombre || usuario.nombre,
+      enviadoEn: mensaje.enviadoEn
     });
 
     // 10. Cambiar estado a ESPERANDO RESPUESTA si corresponde

@@ -35,6 +35,12 @@ app.use(helmet({
 }));
 app.use(cors());
 app.use(morgan('dev'));
+
+// Parser raw para el webhook de OpenWA (verificación HMAC sobre los bytes exactos).
+// Debe registrarse ANTES de express.json() global: cuando express.raw parsea el body,
+// body-parser marca req._body y el JSON global lo salta, dejando req.body como Buffer.
+app.use('/api/webhooks/whatsapp', express.raw({ type: 'application/json' }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
