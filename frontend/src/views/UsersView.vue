@@ -55,24 +55,51 @@
               <th class="px-6 py-4 text-left text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Nombre</th>
               <th class="px-6 py-4 text-left text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Email</th>
               <th class="px-6 py-4 text-left text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Rol</th>
+              <!-- ✅ NUEVA COLUMNA: Estado -->
+              <th class="px-6 py-4 text-left text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Estado</th>
               <th class="px-6 py-4 text-right text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Acciones</th>
             </tr>
           </thead>
           <tbody class="bg-white dark:bg-slate-900 divide-y divide-slate-100/40 dark:divide-slate-800/60">
-            <tr v-for="user in users" :key="user.id" class="hover:bg-sky-50/10 dark:hover:bg-sky-950/10 transition-colors duration-150">
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-800 dark:text-white">{{ user.nombre }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">{{ user.email }}</td>
+            <!-- ✅ Cada fila se atenúa si el usuario está inactivo -->
+            <tr
+              v-for="user in users"
+              :key="user.id"
+              class="hover:bg-sky-50/10 dark:hover:bg-sky-950/10 transition-colors duration-150"
+              :class="{ 'opacity-50': !user.activo }"
+            >
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-800 dark:text-white">
+                {{ user.nombre }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
+                {{ user.email }}
+              </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <BaseBadge :variant="user.rol === 'supervisor' ? 'purple' : 'blue'">
                   {{ user.rol }}
                 </BaseBadge>
               </td>
+              <!-- ✅ NUEVA COLUMNA: Badge de estado -->
+              <td class="px-6 py-4 whitespace-nowrap">
+                <BaseBadge :variant="user.activo ? 'green' : 'gray'">
+                  {{ user.activo ? 'Activo' : 'Inactivo' }}
+                </BaseBadge>
+              </td>
+              <!-- ✅ Acciones dinámicas según estado -->
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
                 <button
+                  v-if="user.activo"
                   @click="openDeleteConfirm(user)"
                   class="text-danger hover:text-red-600 dark:text-danger dark:hover:text-red-500 font-semibold transition-colors cursor-pointer"
                 >
                   Desactivar
+                </button>
+                <button
+                  v-else
+                  @click="handleReactivarUser(user)"
+                  class="text-emerald-600 hover:text-emerald-700 dark:text-emerald-500 dark:hover:text-emerald-400 font-semibold transition-colors cursor-pointer"
+                >
+                  Reactivar
                 </button>
               </td>
             </tr>
@@ -95,7 +122,6 @@
           :error="formErrors.nombre"
           required
         />
-        
         <BaseInput
           v-model="form.email"
           label="Correo electrónico"
@@ -104,7 +130,6 @@
           :error="formErrors.email"
           required
         />
-        
         <BaseInput
           v-model="form.password"
           label="Contraseña"
@@ -113,7 +138,6 @@
           :error="formErrors.password"
           required
         />
-        
         <div>
           <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1.5">Rol</label>
           <select
@@ -125,7 +149,6 @@
           </select>
         </div>
       </form>
-
       <template #footer>
         <div class="flex gap-3 justify-end">
           <BaseButton
@@ -146,7 +169,7 @@
       </template>
     </BaseModal>
 
-    <!-- Dialog: Confirmar Eliminación -->
+    <!-- Dialog: Confirmar Desactivación -->
     <ConfirmDialog
       v-model="showDeleteConfirm"
       title="¿Desactivar este usuario?"
@@ -169,7 +192,8 @@ import BaseBadge from '@/components/base/BaseBadge.vue'
 import BaseModal from '@/components/base/BaseModal.vue'
 import BaseInput from '@/components/base/BaseInput.vue'
 import ConfirmDialog from '@/components/base/ConfirmDialog.vue'
-import { getUsers, createUser, desactivarUsuario } from '@/services/userService'
+// ✅ NUEVO: importar reactivarUsuario
+import { getUsers, createUser, desactivarUsuario, reactivarUsuario } from '@/services/userService'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -229,30 +253,25 @@ const openCreateModal = () => {
 
 const validateForm = () => {
   const errors = {}
-  
   if (!form.value.nombre.trim()) {
     errors.nombre = 'El nombre es obligatorio'
   }
-  
   if (!form.value.email.trim()) {
     errors.email = 'El email es obligatorio'
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email)) {
     errors.email = 'El email no es válido'
   }
-  
   if (!form.value.password) {
     errors.password = 'La contraseña es obligatoria'
   } else if (form.value.password.length < 6) {
     errors.password = 'La contraseña debe tener al menos 6 caracteres'
   }
-  
   formErrors.value = errors
   return Object.keys(errors).length === 0
 }
 
 const handleCreateUser = async () => {
   if (!validateForm()) return
-  
   createLoading.value = true
   try {
     const response = await createUser(form.value)
@@ -278,7 +297,6 @@ const openDeleteConfirm = (user) => {
 
 const handleDeleteUser = async () => {
   if (!selectedUser.value) return
-  
   deleteLoading.value = true
   try {
     const response = await desactivarUsuario(selectedUser.value.id)
@@ -292,9 +310,27 @@ const handleDeleteUser = async () => {
   } catch (err) {
     console.error('Error desactivando usuario:', err)
     const mensaje = err.response?.data?.error || 'Ocurrió un error al desactivar al técnico.'
-    alert(`❌ Error: ${mensaje}`)
+    alert(` Error: ${mensaje}`)
   } finally {
     deleteLoading.value = false
+  }
+}
+
+// ✅ NUEVO: Función para reactivar usuario
+const handleReactivarUser = async (user) => {
+  if (!confirm(`¿Reactivar a ${user.nombre}?`)) return
+
+  try {
+    const response = await reactivarUsuario(user.id)
+    if (response.success) {
+      await fetchUsers()
+      alert('✅ Usuario reactivado correctamente')
+    } else {
+      alert(response.error || 'Error al reactivar usuario')
+    }
+  } catch (err) {
+    console.error('Error reactivando usuario:', err)
+    alert(err.response?.data?.error || 'Error de conexión')
   }
 }
 </script>
