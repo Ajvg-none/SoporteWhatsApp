@@ -24,6 +24,12 @@ async function conReintentos(fn, intentos = 3, baseDelayMs = 300) {
       const status = error.response?.status;
       const esReintentable = ESTADOS_REINTENTABLES.includes(status);
       if (!esReintentable || i === intentos - 1) {
+        // Loguear el cuerpo de la respuesta de OpenWA (p.ej. "Invalid API key",
+        // "IP address not allowed", "API key not authorized for this session")
+        // para diagnosticar 401/403 sin mirar el audit log de OpenWA.
+        if (error.response?.data) {
+          console.error('📦 Respuesta de OpenWA:', JSON.stringify(error.response.data));
+        }
         throw error;
       }
       const delay = baseDelayMs * Math.pow(2, i);

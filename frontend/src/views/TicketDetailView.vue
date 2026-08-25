@@ -456,7 +456,7 @@
               </button>
             </div>
 
-            <form @submit.prevent="handleSendMessage().then(() => { setTimeout(() => fetchTicketDetails(), 300); resetInputHeight(); })" class="flex items-end gap-2">
+            <form @submit.prevent="handleSendMessage()" class="flex items-end gap-2">
               <input
                 type="file"
                 ref="fileInput"
@@ -478,7 +478,7 @@
               <textarea
                 v-model="messageText"
                 @input="autoResizeInput"
-                @keydown.enter.prevent="if (!isReadOnly && (messageText.trim() || selectedFile) && !sendLoading) { handleSendMessage().then(() => { setTimeout(() => fetchTicketDetails(), 300); resetInputHeight(); }) }"
+                @keydown.enter.prevent="if (!isReadOnly && (messageText.trim() || selectedFile) && !sendLoading) { handleSendMessage() }"
                 placeholder="Escribe tu mensaje aquí..."
                 rows="1"
                 style="resize: none; max-height: 120px;"
@@ -1164,8 +1164,6 @@ const handleSendMessage = async () => {
       // Limpiar inputs
       messageText.value = ''
       selectedFile.value = null
-      fileName.value = ''
-      fileSize.value = 0
       
       // Resetear altura del textarea
       resetInputHeight()
