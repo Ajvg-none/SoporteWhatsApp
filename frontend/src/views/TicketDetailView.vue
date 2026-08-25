@@ -478,7 +478,7 @@
               <textarea
                 v-model="messageText"
                 @input="autoResizeInput"
-                @keydown.enter.prevent="if (!isReadOnly && (messageText.trim() || selectedFile) && !sendLoading) { handleSendMessage() }"
+                @keydown.enter.prevent="handleEnterKey()"
                 placeholder="Escribe tu mensaje aquí..."
                 rows="1"
                 style="resize: none; max-height: 120px;"
@@ -1184,6 +1184,12 @@ const handleSendMessage = async () => {
   } finally {
     sendLoading.value = false
   }
+}
+
+const handleEnterKey = () => {
+  if (isReadOnly.value || sendLoading.value) return
+  if (!messageText.value.trim() && !selectedFile.value) return
+  handleSendMessage()
 }
 
 const getFileType = (mime) => {
