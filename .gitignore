@@ -1,0 +1,33 @@
+# Archivos de entorno y credenciales
+.env
+.env.*
+!.env.example
+
+# Base de datos y respaldos
+*.sql
+*.sqlite
+*.sqlite3
+
+# Multimedia y archivos subidos por usuarios
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Logs
+logs/
+backend/logs/
+*.log
+
+# Dependencias
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+
+# Código generado por Prisma y compilaciones
+backend/generated/
+dist/
+frontend/dist/
+
+# Archivos del sistema y editores
+.DS_Store
+.vscode/
+.idea/
