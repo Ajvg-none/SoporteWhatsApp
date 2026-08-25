@@ -167,11 +167,29 @@ exports.sendDirectMessage = async (req, res) => {
       });
     }
 
-    // 1. Guardar en BD
+    // 1. Enviar vía OpenWA al número del cliente
+    const openwaService = require('../services/openwaService');
+    let envioExitoso = false;
+    let errorEnvio = null;
+
+    try {
+      await openwaService.sendMessage(numeroRemitente, contenido);
+      envioExitoso = true;
+      console.log(`✅ Respuesta enviada a ${numeroRemitente} vía OpenWA`);
+    } catch (error) {
+      console.error('❌ Error enviando mensaje por OpenWA:', error.message);
+      errorEnvio = error.response?.data?.message || error.message || 'Error al enviar por WhatsApp';
+    }
+
+    // 2. Guardar en BD (marcado si no se pudo enviar)
+    const contenidoGuardado = envioExitoso
+      ? contenido
+      : `[NO ENVIADO] ${contenido}`;
+
     const mensaje = await prisma.mensajeDirecto.create({
       data: {
         numeroRemitente,
-        contenido,
+        contenido: contenidoGuardado,
         tipo: 'texto',
         remitente: 'supervisor',
         supervisorId,
@@ -187,28 +205,23 @@ exports.sendDirectMessage = async (req, res) => {
       }
     });
 
-    // 2. Enviar vía OpenWA al número del cliente
-    const openwaService = require('../services/openwaService');
-    try {
-      await openwaService.sendMessage(numeroRemitente, contenido);
-      console.log(`✅ Respuesta enviada a ${numeroRemitente} vía OpenWA`);
-    } catch (error) {
-      console.error('❌ Error enviando mensaje por OpenWA:', error.message);
-    }
-
     // 3. Notificar a otros supervisores conectados
     const socketService = require('../services/socketService');
     socketService.notifyAllSupervisors('respuesta_directa_enviada', {
       numeroRemitente,
       alias: mensaje.numeroExcluido?.nombre || null,
       supervisorNombre: req.user.nombre,
-      contenido,
+      contenido: mensaje.contenido,
+      enviado: envioExitoso,
+      error: errorEnvio,
       timestamp: new Date()
     });
 
     res.status(201).json({
       success: true,
-      message: 'Mensaje enviado correctamente',
+      message: envioExitoso
+        ? 'Mensaje enviado correctamente'
+        : 'Mensaje guardado pero NO se pudo enviar por WhatsApp',
       data: {
         id: mensaje.id,
         numeroRemitente: mensaje.numeroRemitente,
@@ -216,6 +229,8 @@ exports.sendDirectMessage = async (req, res) => {
         contenido: mensaje.contenido,
         remitente: mensaje.remitente,
         supervisorNombre: mensaje.supervisor?.nombre,
+        enviado: envioExitoso,
+        error: envioExitoso ? null : errorEnvio,
         enviadoEn: mensaje.enviadoEn
       }
     });

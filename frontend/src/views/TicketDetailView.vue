@@ -1169,8 +1169,13 @@ const handleSendMessage = async () => {
       
       // Resetear altura del textarea
       resetInputHeight()
+
+      // Si OpenWA no pudo entregar el mensaje, avisar al agente
+      if (response.data.data?.enviado === false) {
+        alert('⚠️ No se pudo enviar por WhatsApp: ' + (response.data.data?.error || 'destino no resuelto por WhatsApp'))
+      }
       
-      // Recargar mensajes
+      // Recargar mensajes (el mensaje queda marcado como [NO ENVIADO] en el historial)
       await fetchTicketDetails()
     } else {
       alert(response.data.error || 'Error al enviar mensaje')

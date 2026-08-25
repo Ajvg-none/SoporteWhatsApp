@@ -297,6 +297,12 @@ const handleSendMessage = async () => {
     
     if (response.success) {
       messageText.value = ''
+
+      // Si OpenWA no pudo entregar, avisar al supervisor
+      if (response.data?.enviado === false) {
+        alert('⚠️ No se pudo enviar por WhatsApp: ' + (response.data?.error || 'destino no resuelto por WhatsApp'))
+      }
+
       // Recargar mensajes
       await loadMessages(selectedNumber.value)
       // Recargar números para actualizar último mensaje
