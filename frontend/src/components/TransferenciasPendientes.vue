@@ -210,7 +210,7 @@ const getStatusVariant = (estado) => {
 
 const formatPhone = (phone) => {
   if (!phone) return ''
-  return phone.replace('@c.us', '')
+  return String(phone).replace(/@c\.us|@g\.us|@lid/gi, '').replace(/[\s\-\(\)]/g, '')
 }
 
 const formatDate = (dateStr) => {

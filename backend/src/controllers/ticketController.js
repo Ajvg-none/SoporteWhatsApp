@@ -496,8 +496,14 @@ exports.sendMessage = async (req, res) => {
     let errorEnvio = null;
 
     try {
-      const numeroCliente = ticket.contacto.numero_telefono;
+      // Destino: si el cliente es un @lid (privacy-id), escribir al @lid de retorno
+      // para poder responderle; si no, al número real como @c.us.
+      const numeroDestino = ticket.lidEnvio
+        || ticket.contacto?.lid_whatsapp
+        || ticket.contacto?.numero_telefono;
       const texto = contenido || '';
+
+      console.log(`📤 Enviando a destino: ${numeroDestino} (lidEnvio=${ticket.lidEnvio || '-'}, lidContacto=${ticket.contacto?.lid_whatsapp || '-'})`);
 
       if (archivo) {
         // Construir URL pública del archivo
@@ -505,7 +511,7 @@ exports.sendMessage = async (req, res) => {
         const urlArchivo = `${baseURL}${urlAdjunto}`;
         
         openwaResponse = await openwaService.sendMedia(
-          numeroCliente,
+          numeroDestino,
           texto,
           {
             url: urlArchivo,
@@ -516,7 +522,7 @@ exports.sendMessage = async (req, res) => {
         console.log(`📎 Archivo enviado a OpenWA: ${archivo.originalname}`);
       } else {
         openwaResponse = await openwaService.sendMessage(
-          numeroCliente,
+          numeroDestino,
           texto
         );
       }
@@ -1543,5 +1549,113 @@ exports.getTicketCounts = async (req, res) => {
       success: false,
       error: 'Error interno del servidor'
     });
+  }
+};
+
+/**
+ * POST /api/tickets/crear
+ * Crear un ticket MANUAL hacia un contacto registrado (p. ej. para escribirle a la tienda).
+ * ✅ Requiere: verifyToken (técnicos y supervisores)
+ * Body: { numero } — número del contacto (PK de `contactos`)
+ * El ticket se crea en estado 'asignado' al operador que lo crea.
+ * Si ya existe un ticket ABIERTO para ese contacto, se devuelve ese (no se duplica).
+ */
+exports.createManualTicket = async (req, res) => {
+  try {
+    const { numero } = req.body || {};
+    const userId = req.user.id;
+
+    // 1. Validaciones básicas
+    if (!numero || String(numero).trim() === '') {
+      return res.status(400).json({
+        success: false,
+        error: 'Debes especificar el número del contacto'
+      });
+    }
+
+    // El número puede venir con @c.us o sin sufijo; normalizar a la PK usada por el contacto.
+    const numeroBuscado = String(numero).trim().includes('@')
+      ? String(numero).trim()
+      : `${String(numero).trim()}@c.us`;
+
+    // 2. Validar que el contacto exista (Ticket.numeroCliente es FK a Contacto)
+    const contacto = await prisma.contacto.findUnique({
+      where: { numero_telefono: numeroBuscado }
+    });
+
+    if (!contacto) {
+      return res.status(404).json({
+        success: false,
+        error: 'El contacto no está registrado. Agrégalo en el apartado de Contactos antes de crear un ticket.'
+      });
+    }
+
+    // 3. No duplicar: si ya hay un ticket ABIERTO para ese contacto, devolverlo
+    const abierto = await prisma.ticket.findFirst({
+      where: {
+        numeroCliente: numeroBuscado,
+        estado: { in: ['nuevo', 'asignado', 'esperando', 'resuelto'] }
+      },
+      include: {
+        contacto: true,
+        tecnicoAsignado: { select: { id: true, nombre: true, email: true } }
+      }
+    });
+
+    if (abierto) {
+      return res.json({
+        success: true,
+        message: `Ya existe un ticket abierto para este contacto (estado: ${abierto.estado})`,
+        data: { ticket: abierto, yaExistente: true }
+      });
+    }
+
+    // 4. Crear el ticket asignado al operador actual
+    const ticket = await prisma.ticket.create({
+      data: {
+        numeroCliente: numeroBuscado,
+        lidEnvio: contacto.lid_whatsapp || null,
+        estado: 'asignado',
+        tecnicoAsignadoId: userId,
+        transferido: false,
+        creadoEn: new Date(),
+        actualizadoEn: new Date()
+      },
+      include: {
+        contacto: true,
+        tecnicoAsignado: { select: { id: true, nombre: true, email: true } }
+      }
+    });
+
+    // 5. Registrar en auditoría
+    await prisma.auditoria.create({
+      data: {
+        ticketId: ticket.id,
+        usuarioId: userId,
+        accion: 'creacion_manual',
+        detalle: {
+          numero_cliente: numeroBuscado,
+          creado_por: req.user.email || `usuario_${userId}`,
+          tipo: 'saliente_manual'
+        },
+        fechaHora: new Date()
+      }
+    });
+
+    console.log(`🎫 Ticket manual #${ticket.id} creado por ${req.user.email} → ${numeroBuscado}`);
+
+    // 6. Notificar en vivo
+    const socketService = require('../services/socketService');
+    socketService.broadcast('nuevo_ticket', { ticketId: ticket.id, estado: ticket.estado });
+
+    res.status(201).json({
+      success: true,
+      message: 'Ticket creado correctamente',
+      data: { ticket, yaExistente: false }
+    });
+
+  } catch (error) {
+    console.error('❌ Error en createManualTicket:', error);
+    res.status(500).json({ success: false, error: 'Error interno del servidor' });
   }
 };

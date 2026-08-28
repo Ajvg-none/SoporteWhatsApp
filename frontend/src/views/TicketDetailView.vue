@@ -303,7 +303,7 @@
                   : 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/60 text-slate-800 dark:text-white rounded-tl-none'"
               >
                 <div class="text-[9px] font-extrabold tracking-wider uppercase mb-1.5 opacity-75 flex items-center gap-1">
-                  <span>{{ msg.remitente === 'tecnico' ? (msg.tecnicoNombre || 'Técnico') : (contacto?.nombre || 'Cliente') }}</span>
+                  <span>{{ msg.remitente === 'tecnico' ? (msg.tecnicoNombre || 'Cuenta WhatsApp') : (contacto?.nombre || 'Cliente') }}</span>
                 </div>
 
                 <p v-if="msg.contenido && (!msg.urlAdjunto || !msg.contenido.startsWith('[Archivo: '))" class="whitespace-pre-wrap break-words leading-relaxed font-medium text-xs md:text-sm">{{ msg.contenido }}</p>
@@ -478,7 +478,7 @@
               <textarea
                 v-model="messageText"
                 @input="autoResizeInput"
-                @keydown.enter.prevent="if (!isReadOnly && (messageText.trim() || selectedFile) && !sendLoading) { handleSendMessage() }"
+                @keydown.enter.prevent="handleEnterKey()"
                 placeholder="Escribe tu mensaje aquí..."
                 rows="1"
                 style="resize: none; max-height: 120px;"
@@ -1229,7 +1229,7 @@ const getStatusVariant = (estado) => {
 
 const formatPhone = (phone) => {
   if (!phone) return ''
-  return phone.replace('@c.us', '')
+  return String(phone).replace(/@c\.us|@g\.us|@lid/gi, '').replace(/[\s\-\(\)]/g, '')
 }
 
 const formatDate = (dateStr) => {

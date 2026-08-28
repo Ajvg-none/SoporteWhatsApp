@@ -158,6 +158,27 @@ class OpenWAService {
   formatPhoneNumber(phone) {
     return this.toChatId(phone).replace('@c.us', '');
   }
+
+  /**
+   * Determina el chatId de ENVÍO a partir de un contacto o ticket.
+   * Si el remitente es un @lid (privacy-id) y guardamos su número real en
+   * `numero_telefono`, para poder responder hay que escribir al @lid.
+   * Se prioriza:
+   *   1. `lid` explícito (ticket.lidEnvio o contacto.lid_whatsapp)
+   *   2. el propio `numero` si ya viene con @lid
+   *   3. el `numero` como @c.us
+   * @param {{ numero?: string, lid?: string|null }} destino
+   * @returns {string} chatId para OpenWA
+   */
+  toChatIdEnvio({ numero, lid }) {
+    if (lid && /@lid/i.test(String(lid))) {
+      return this.toChatId(lid);
+    }
+    if (numero && /@lid/i.test(String(numero))) {
+      return this.toChatId(numero);
+    }
+    return this.toChatId(numero);
+  }
 }
 
 module.exports = new OpenWAService();

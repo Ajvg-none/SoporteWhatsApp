@@ -37,6 +37,12 @@ const routes = [
         meta: { requiresSupervisor: true }
       },
       {
+        path: 'contactos',
+        name: 'Contacts',
+        component: () => import('@/views/ContactsView.vue'),
+        meta: { requiresSupervisor: true }
+      },
+      {
         path: 'chat-directo',
         name: 'DirectChat',
         component: () => import('@/views/DirectChatView.vue'),

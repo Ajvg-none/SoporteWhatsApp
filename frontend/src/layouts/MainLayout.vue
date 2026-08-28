@@ -56,6 +56,17 @@
           </router-link>
 
           <router-link
+            to="/contactos"
+            class="flex items-center px-4 py-3 text-sm font-semibold text-slate-650 dark:text-slate-400 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-primary dark:hover:text-primary transition-all duration-200 group"
+            :class="[ $route.path === '/contactos' ? 'bg-sky-50 dark:bg-sky-950/40 !text-primary border border-sky-100/30 dark:border-sky-900/20' : 'border border-transparent' ]"
+          >
+            <svg class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            Contactos
+          </router-link>
+
+          <router-link
             to="/chat-directo"
             class="flex items-center px-4 py-3 text-sm font-semibold text-slate-650 dark:text-slate-400 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-primary dark:hover:text-primary transition-all duration-200 group"
             :class="[ $route.path === '/chat-directo' ? 'bg-sky-50 dark:bg-sky-950/40 !text-primary border border-sky-100/30 dark:border-sky-900/20' : 'border border-transparent' ]"
@@ -164,6 +175,7 @@ const currentTitle = computed(() => {
     'Dashboard': 'Panel de Control',
     'Users': 'Administración de Usuarios',
     'ExcludedNumbers': 'Números Excluidos',
+    'Contacts': 'Contactos',
     'DirectChat': 'Chat Privado VIP'
   }
   return titles[router.currentRoute.value.name] || 'SoporteWhatsApp'

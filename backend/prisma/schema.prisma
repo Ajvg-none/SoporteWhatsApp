@@ -29,9 +29,10 @@ model Usuario {
 }
 
 model Contacto {
-  numero_telefono String    @id @db.VarChar(20)
+  numero_telefono String    @id @db.VarChar(30)
   nombre          String?   @db.VarChar(100)
   sucursal        String?   @db.VarChar(100)
+  lid_whatsapp    String?   @map("lid_whatsapp") @db.VarChar(30)
   creadoEn        DateTime? @default(now()) @map("creado_en") @db.Timestamp(6)
   actualizadoEn   DateTime? @default(now()) @updatedAt @map("actualizado_en") @db.Timestamp(6)
   tickets         Ticket[]
@@ -43,7 +44,8 @@ model Contacto {
 
 model Ticket {
   id                              Int         @id @default(autoincrement())
-  numeroCliente                   String      @map("numero_cliente") @db.VarChar(20)
+  numeroCliente                   String      @map("numero_cliente") @db.VarChar(30)
+  lidEnvio                        String?     @map("lid_envio") @db.VarChar(30)
   estado                          String      @db.VarChar(20)
   tecnicoAsignadoId               Int?        @map("tecnico_asignado_id")
   solicitudTransferenciaTecnicoId Int?        @map("solicitud_transferencia_tecnico_id")
