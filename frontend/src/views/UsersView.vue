@@ -96,7 +96,7 @@
                 </button>
                 <button
                   v-else
-                  @click="handleReactivarUser(user)"
+                  @click="openReactivarConfirm(user)"
                   class="text-emerald-600 hover:text-emerald-700 dark:text-emerald-500 dark:hover:text-emerald-400 font-semibold transition-colors cursor-pointer"
                 >
                   Reactivar
@@ -179,6 +179,17 @@
       variant="danger"
       @confirm="handleDeleteUser"
     />
+
+    <!-- Dialog: Confirmar Reactivar -->
+    <ConfirmDialog
+      v-model="showReactivarConfirm"
+      title="¿Reactivar este usuario?"
+      :message="`Al reactivar a ${selectedReactivarUser?.nombre || 'este usuario'} recuperará acceso al sistema.`"
+      confirm-text="Sí, reactivar"
+      cancel-text="Cancelar"
+      variant="primary"
+      @confirm="handleReactivarUser"
+    />
   </div>
 </template>
 
@@ -186,6 +197,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useToastStore } from '@/stores/toast'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseBadge from '@/components/base/BaseBadge.vue'
@@ -197,6 +209,7 @@ import { getUsers, createUser, desactivarUsuario, reactivarUsuario } from '@/ser
 
 const router = useRouter()
 const authStore = useAuthStore()
+const toast = useToastStore()
 
 // Estados
 const users = ref([])
@@ -205,6 +218,8 @@ const error = ref('')
 const showCreateModal = ref(false)
 const showDeleteConfirm = ref(false)
 const selectedUser = ref(null)
+const showReactivarConfirm = ref(false)
+const selectedReactivarUser = ref(null)
 
 // Formulario de creación
 const form = ref({
@@ -278,13 +293,13 @@ const handleCreateUser = async () => {
     if (response.success) {
       showCreateModal.value = false
       await fetchUsers()
-      alert('Usuario creado exitosamente')
+      toast.success('Usuario creado exitosamente')
     } else {
-      alert(response.error || 'Error al crear usuario')
+      toast.error(response.error || 'Error al crear usuario')
     }
   } catch (err) {
     console.error('Error creating user:', err)
-    alert(err.response?.data?.error || 'Error de conexión')
+    toast.error(err.response?.data?.error || 'Error de conexión')
   } finally {
     createLoading.value = false
   }
@@ -303,34 +318,39 @@ const handleDeleteUser = async () => {
     if (response.success) {
       showDeleteConfirm.value = false
       await fetchUsers()
-      alert('✅ Técnico desactivado correctamente.')
+      toast.success('Técnico desactivado correctamente.')
     } else {
-      alert(response.error || 'Error al desactivar usuario')
+      toast.error(response.error || 'Error al desactivar usuario')
     }
   } catch (err) {
     console.error('Error desactivando usuario:', err)
     const mensaje = err.response?.data?.error || 'Ocurrió un error al desactivar al técnico.'
-    alert(` Error: ${mensaje}`)
+    toast.error(mensaje)
   } finally {
     deleteLoading.value = false
   }
 }
 
 // ✅ NUEVO: Función para reactivar usuario
-const handleReactivarUser = async (user) => {
-  if (!confirm(`¿Reactivar a ${user.nombre}?`)) return
+const openReactivarConfirm = (user) => {
+  selectedReactivarUser.value = user
+  showReactivarConfirm.value = true
+}
+
+const handleReactivarUser = async () => {
+  if (!selectedReactivarUser.value) return
 
   try {
-    const response = await reactivarUsuario(user.id)
+    const response = await reactivarUsuario(selectedReactivarUser.value.id)
     if (response.success) {
       await fetchUsers()
-      alert('✅ Usuario reactivado correctamente')
+      toast.success('Usuario reactivado correctamente')
     } else {
-      alert(response.error || 'Error al reactivar usuario')
+      toast.error(response.error || 'Error al reactivar usuario')
     }
   } catch (err) {
     console.error('Error reactivando usuario:', err)
-    alert(err.response?.data?.error || 'Error de conexión')
+    toast.error(err.response?.data?.error || 'Error de conexión')
   }
 }
 </script>

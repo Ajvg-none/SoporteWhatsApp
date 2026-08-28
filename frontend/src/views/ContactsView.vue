@@ -206,6 +206,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useToastStore } from '@/stores/toast'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseModal from '@/components/base/BaseModal.vue'
@@ -215,6 +216,7 @@ import { getContacts, createContact, updateContact, deleteContact } from '@/serv
 
 const router = useRouter()
 const authStore = useAuthStore()
+const toast = useToastStore()
 
 const contacts = ref([])
 const loading = ref(false)
@@ -320,13 +322,13 @@ const handleAdd = async () => {
     if (response.success) {
       showAddModal.value = false
       await fetchContacts()
-      alert('✅ Contacto agregado exitosamente')
+      toast.success('Contacto agregado exitosamente')
     } else {
-      alert(response.error || 'Error al agregar el contacto')
+      toast.error(response.error || 'Error al agregar el contacto')
     }
   } catch (err) {
     console.error('Error adding contact:', err)
-    alert(err.response?.data?.error || 'Error de conexión')
+    toast.error(err.response?.data?.error || 'Error de conexión')
   } finally {
     addLoading.value = false
   }
@@ -351,13 +353,13 @@ const handleUpdate = async () => {
     if (response.success) {
       showEditModal.value = false
       await fetchContacts()
-      alert('✅ Contacto actualizado exitosamente')
+      toast.success('Contacto actualizado exitosamente')
     } else {
-      alert(response.error || 'Error al actualizar el contacto')
+      toast.error(response.error || 'Error al actualizar el contacto')
     }
   } catch (err) {
     console.error('Error updating contact:', err)
-    alert(err.response?.data?.error || 'Error de conexión')
+    toast.error(err.response?.data?.error || 'Error de conexión')
   } finally {
     editLoading.value = false
   }
@@ -377,13 +379,13 @@ const handleRemove = async () => {
     if (response.success) {
       showRemoveConfirm.value = false
       await fetchContacts()
-      alert('✅ Contacto eliminado correctamente')
+      toast.success('Contacto eliminado correctamente')
     } else {
-      alert(response.error || 'Error al eliminar el contacto')
+      toast.error(response.error || 'Error al eliminar el contacto')
     }
   } catch (err) {
     console.error('Error removing contact:', err)
-    alert(err.response?.data?.error || 'Error de conexión')
+    toast.error(err.response?.data?.error || 'Error de conexión')
   } finally {
     removeLoading.value = false
     selectedItem.value = null

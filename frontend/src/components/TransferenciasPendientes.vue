@@ -99,7 +99,7 @@
                 variant="danger"
                 class="!py-1 !px-3.5 !text-xs font-bold shadow-sm"
                 :loading="loadingReject === ticket.id"
-                @click="handleReject(ticket.id)"
+                @click="openRejectConfirm(ticket.id)"
               >
                 <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -122,22 +122,38 @@
         </div>
       </div>
     </div>
+
+    <!-- Dialog: Confirmar rechazo de transferencia -->
+    <ConfirmDialog
+      v-model="showRejectConfirm"
+      title="¿Rechazar la transferencia?"
+      message="El ticket se quedará en tu asignación actual. ¿Deseas continuar?"
+      confirm-text="Sí, rechazar"
+      cancel-text="Cancelar"
+      variant="danger"
+      @confirm="handleReject"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useToastStore } from '@/stores/toast'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseBadge from '@/components/base/BaseBadge.vue'
+import ConfirmDialog from '@/components/base/ConfirmDialog.vue'
 import { getTransferenciasPendientes, acceptTransfer, rejectTransfer } from '@/services/ticketService'
 import socketService from '@/services/socketService'
 
 const authStore = useAuthStore()
+const toast = useToastStore()
 const transferencias = ref([])
 const loading = ref(false)
 const loadingAccept = ref(null)
 const loadingReject = ref(null)
+const showRejectConfirm = ref(false)
+const rejectTicketId = ref(null)
 
 const fetchTransferencias = async () => {
   loading.value = true
@@ -167,33 +183,39 @@ const handleAccept = async (ticketId) => {
       await fetchTransferencias()
       window.dispatchEvent(new CustomEvent('ticket-updated'))
     } else {
-      alert(response.error || 'Error al aceptar la transferencia')
+      toast.error(response.error || 'Error al aceptar la transferencia')
     }
   } catch (error) {
     console.error('Error accepting transfer:', error)
-    alert(error.response?.data?.error || 'Error al conectar con el servidor')
+    toast.error(error.response?.data?.error || 'Error al conectar con el servidor')
   } finally {
     loadingAccept.value = null
   }
 }
 
-const handleReject = async (ticketId) => {
-  if (!confirm('¿Estás seguro de rechazar esta transferencia?')) return
+const openRejectConfirm = (ticketId) => {
+  rejectTicketId.value = ticketId
+  showRejectConfirm.value = true
+}
+
+const handleReject = async () => {
+  if (!rejectTicketId.value) return
   
-  loadingReject.value = ticketId
+  loadingReject.value = rejectTicketId.value
   try {
-    const response = await rejectTransfer(ticketId)
+    const response = await rejectTransfer(rejectTicketId.value)
     if (response.success) {
       await fetchTransferencias()
       window.dispatchEvent(new CustomEvent('ticket-updated'))
     } else {
-      alert(response.error || 'Error al rechazar la transferencia')
+      toast.error(response.error || 'Error al rechazar la transferencia')
     }
   } catch (error) {
     console.error('Error rejecting transfer:', error)
-    alert(error.response?.data?.error || 'Error al conectar con el servidor')
+    toast.error(error.response?.data?.error || 'Error al conectar con el servidor')
   } finally {
     loadingReject.value = null
+    rejectTicketId.value = null
   }
 }
 

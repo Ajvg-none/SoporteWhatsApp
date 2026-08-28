@@ -514,6 +514,7 @@ exports.sendMessage = async (req, res) => {
           numeroDestino,
           texto,
           {
+            localPath: archivo.path,
             url: urlArchivo,
             mimeType: archivo.mimetype,
             fileName: archivo.originalname

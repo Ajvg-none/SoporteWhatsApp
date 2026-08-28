@@ -158,39 +158,74 @@ exports.getUnreadCount = async (req, res) => {
 exports.sendDirectMessage = async (req, res) => {
   try {
     const { numeroRemitente, contenido } = req.body;
+    const archivo = req.file; // Viene de Multer
     const supervisorId = req.user.id;
 
-    if (!numeroRemitente || !contenido) {
+    if (!numeroRemitente || (!contenido && !archivo)) {
       return res.status(400).json({
         success: false,
         error: 'Número y contenido son obligatorios'
       });
     }
 
-    // 1. Enviar vía OpenWA al número del cliente
+    // 1. Determinar tipo y URL del adjunto (si lo hay)
+    let tipo = 'texto';
+    let urlAdjunto = null;
+
+    if (archivo) {
+      const mimeMap = {
+        'image/': 'imagen',
+        'video/': 'video',
+        'audio/': 'audio',
+        'application/pdf': 'documento',
+        'application/msword': 'documento',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'documento',
+        'application/vnd.ms-excel': 'documento',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'documento'
+      };
+      for (const [prefix, tipoValor] of Object.entries(mimeMap)) {
+        if (archivo.mimetype.startsWith(prefix) || archivo.mimetype === prefix) {
+          tipo = tipoValor;
+          break;
+        }
+      }
+      urlAdjunto = `/uploads/${archivo.filename}`;
+    }
+
+    // 2. Enviar vía OpenWA al número del cliente
     const openwaService = require('../services/openwaService');
     let envioExitoso = false;
     let errorEnvio = null;
 
     try {
-      await openwaService.sendMessage(numeroRemitente, contenido);
+      if (archivo) {
+        await openwaService.sendMedia(numeroRemitente, contenido || '', {
+          localPath: archivo.path,
+          mimeType: archivo.mimetype,
+          fileName: archivo.originalname
+        });
+      } else {
+        await openwaService.sendMessage(numeroRemitente, contenido);
+      }
       envioExitoso = true;
-      console.log(`✅ Respuesta enviada a ${numeroRemitente} vía OpenWA`);
+      console.log(`✅ Respuesta enviada a ${numeroRemitente} vía OpenWA${archivo ? ` (${archivo.originalname})` : ''}`);
     } catch (error) {
       console.error('❌ Error enviando mensaje por OpenWA:', error.message);
       errorEnvio = error.response?.data?.message || error.message || 'Error al enviar por WhatsApp';
     }
 
-    // 2. Guardar en BD (marcado si no se pudo enviar)
+    // 3. Guardar en BD (marcado si no se pudo enviar)
+    const contenidoBase = contenido || (archivo ? `[Archivo: ${archivo.originalname}]` : '');
     const contenidoGuardado = envioExitoso
-      ? contenido
-      : `[NO ENVIADO] ${contenido}`;
+      ? contenidoBase
+      : `[NO ENVIADO] ${contenidoBase}`;
 
     const mensaje = await prisma.mensajeDirecto.create({
       data: {
         numeroRemitente,
         contenido: contenidoGuardado,
-        tipo: 'texto',
+        tipo,
+        urlAdjunto,
         remitente: 'supervisor',
         supervisorId,
         enviadoEn: new Date()
@@ -227,6 +262,8 @@ exports.sendDirectMessage = async (req, res) => {
         numeroRemitente: mensaje.numeroRemitente,
         alias: mensaje.numeroExcluido?.nombre || null,
         contenido: mensaje.contenido,
+        tipo: mensaje.tipo,
+        urlAdjunto: mensaje.urlAdjunto,
         remitente: mensaje.remitente,
         supervisorNombre: mensaje.supervisor?.nombre,
         enviado: envioExitoso,

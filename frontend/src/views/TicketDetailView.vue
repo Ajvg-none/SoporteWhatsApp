@@ -474,6 +474,12 @@
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
               </button>
+
+              <AudioRecorder
+                v-if="!isReadOnly"
+                @audio-recorded="handleAudioRecorded"
+                class="mb-[1px]"
+              />
               
               <textarea
                 v-model="messageText"
@@ -630,6 +636,7 @@ variant="danger"
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useToastStore } from '@/stores/toast'
 import api from '@/services/api'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
@@ -638,6 +645,7 @@ import BaseDropdown from '@/components/base/BaseDropdown.vue'
 import ConfirmDialog from '@/components/base/ConfirmDialog.vue'
 import BaseModal from '@/components/base/BaseModal.vue'
 import BaseTooltip from '@/components/base/BaseTooltip.vue'
+import AudioRecorder from '@/components/base/AudioRecorder.vue'
 import socketService from '@/services/socketService'
 import {
   changeStatus,
@@ -665,6 +673,7 @@ const resetInputHeight = () => {
 
 const route = useRoute()
 const authStore = useAuthStore()
+const toast = useToastStore()
 
 const loading = ref(false)
 const errorMsg = ref('')
@@ -886,11 +895,11 @@ const handleTakeCase = async () => {
       // Pequeña pausa para que se vea la animación del spinner (300ms)
       await new Promise(resolve => setTimeout(resolve, 300))
     } else {
-      alert(response.data?.error || 'Error al tomar el caso')
+      toast.error(response.data?.error || 'Error al tomar el caso')
     }
   } catch (error) {
     console.error('Error taking case:', error)
-    alert(error.response?.data?.error || 'Error al conectar con el servidor.')
+    toast.error(error.response?.data?.error || 'Error al conectar con el servidor.')
   } finally {
     takingCase.value = false
   }
@@ -917,11 +926,11 @@ const handleChangeStatus = async (nuevoEstado) => {
       // Resetear el dropdown
       selectedStatus.value = null
     } else {
-      alert(response.error || 'Error al cambiar el estado')
+      toast.error(response.error || 'Error al cambiar el estado')
     }
   } catch (error) {
     console.error('Error changing status:', error)
-    alert(error.response?.data?.error || 'Error al conectar con el servidor')
+    toast.error(error.response?.data?.error || 'Error al conectar con el servidor')
   } finally {
     statusLoading.value = false
   }
@@ -948,11 +957,11 @@ try {
     // Recargar detalles del ticket
     await fetchTicketDetails()
   } else {
-    alert(response.error || 'Error al cerrar el ticket')
+    toast.error(response.error || 'Error al cerrar el ticket')
   }
 } catch (error) {
   console.error('Error closing ticket:', error)
-  alert(error.response?.data?.error || 'Error al conectar con el servidor')
+  toast.error(error.response?.data?.error || 'Error al conectar con el servidor')
 } finally {
   closeLoading.value = false
   showCloseConfirm.value = false
@@ -974,7 +983,7 @@ const loadTechnicians = async () => {
     }
   } catch (error) {
     console.error('Error loading technicians:', error)
-    alert('Error al cargar la lista de técnicos')
+    toast.error('Error al cargar la lista de técnicos')
   }
 }
 
@@ -1024,11 +1033,11 @@ const handleConfirmForceAssign = async () => {
       await fetchTicketDetails()
       showTransferModal.value = false
     } else {
-      alert(response.error || 'Error al reasignar el ticket')
+      toast.error(response.error || 'Error al reasignar el ticket')
     }
   } catch (error) {
     console.error('Error force-assigning ticket:', error)
-    alert(error.response?.data?.error || 'Error al conectar con el servidor')
+    toast.error(error.response?.data?.error || 'Error al conectar con el servidor')
   } finally {
     forceAssignLoading.value = false
   }
@@ -1047,11 +1056,11 @@ const handleConfirmTransfer = async () => {
       await fetchTicketDetails()
       showTransferModal.value = false
     } else {
-      alert(response.error || 'Error al solicitar transferencia')
+      toast.error(response.error || 'Error al solicitar transferencia')
     }
   } catch (error) {
     console.error('Error requesting transfer:', error)
-    alert(error.response?.data?.error || 'Error al conectar con el servidor')
+    toast.error(error.response?.data?.error || 'Error al conectar con el servidor')
   } finally {
     transferLoading.value = false
   }
@@ -1069,11 +1078,11 @@ const handleAcceptTransfer = async () => {
     if (response.success) {
       await fetchTicketDetails()
     } else {
-      alert(response.error || 'Error al aceptar transferencia')
+      toast.error(response.error || 'Error al aceptar transferencia')
     }
   } catch (error) {
     console.error('Error accepting transfer:', error)
-    alert(error.response?.data?.error || 'Error al conectar con el servidor')
+    toast.error(error.response?.data?.error || 'Error al conectar con el servidor')
   } finally {
     acceptLoading.value = false
   }
@@ -1098,11 +1107,11 @@ const handleConfirmReject = async () => {
     if (response.success) {
       await fetchTicketDetails()
     } else {
-      alert(response.error || 'Error al rechazar transferencia')
+      toast.error(response.error || 'Error al rechazar transferencia')
     }
   } catch (error) {
     console.error('Error rejecting transfer:', error)
-    alert(error.response?.data?.error || 'Error al conectar con el servidor')
+    toast.error(error.response?.data?.error || 'Error al conectar con el servidor')
   } finally {
     rejectLoading.value = false
     showRejectConfirm.value = false
@@ -1123,7 +1132,7 @@ const handleFileChange = (e) => {
   // Limite de 25MB (26,214,400 bytes)
   const maxSize = 25 * 1024 * 1024
   if (file.size > maxSize) {
-    alert('El archivo supera el límite de 25 MB.')
+    toast.error('El archivo supera el límite de 25 MB.')
     clearSelectedFile()
     return
   }
@@ -1133,6 +1142,12 @@ const handleFileChange = (e) => {
 const clearSelectedFile = () => {
   selectedFile.value = null
   if (fileInput.value) fileInput.value.value = ''
+}
+
+const handleAudioRecorded = async (blob) => {
+  const file = new File([blob], `nota-voz-${Date.now()}.webm`, { type: 'audio/webm' })
+  selectedFile.value = file
+  await handleSendMessage()
 }
 
 const handleSendMessage = async () => {
@@ -1170,17 +1185,17 @@ const handleSendMessage = async () => {
 
       // Si OpenWA no pudo entregar el mensaje, avisar al agente
       if (response.data.data?.enviado === false) {
-        alert('⚠️ No se pudo enviar por WhatsApp: ' + (response.data.data?.error || 'destino no resuelto por WhatsApp'))
+        toast.warning('No se pudo enviar por WhatsApp: ' + (response.data.data?.error || 'destino no resuelto por WhatsApp'))
       }
       
       // Recargar mensajes (el mensaje queda marcado como [NO ENVIADO] en el historial)
       await fetchTicketDetails()
     } else {
-      alert(response.data.error || 'Error al enviar mensaje')
+      toast.error(response.data.error || 'Error al enviar mensaje')
     }
   } catch (error) {
     console.error('Error sending message:', error)
-    alert(error.response?.data?.error || 'Error al conectar con el servidor')
+    toast.error(error.response?.data?.error || 'Error al conectar con el servidor')
   } finally {
     sendLoading.value = false
   }

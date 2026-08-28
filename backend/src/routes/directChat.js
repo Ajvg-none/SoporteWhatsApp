@@ -4,6 +4,7 @@ const express = require('express');
 const router = express.Router();
 const directChatController = require('../controllers/directChatController');
 const { verifyToken, checkSupervisorRole } = require('../middlewares/auth');
+const upload = require('../middlewares/upload');
 
 // ============================================================
 // IMPORTANTE: Las rutas estáticas (con palabras fijas) 
@@ -24,6 +25,6 @@ router.get('/', verifyToken, checkSupervisorRole, directChatController.getDirect
 router.get('/:numero', verifyToken, checkSupervisorRole, directChatController.getMessagesByNumber);
 
 // POST /api/chat-directo - Enviar mensaje
-router.post('/', verifyToken, checkSupervisorRole, directChatController.sendDirectMessage);
+router.post('/', verifyToken, checkSupervisorRole, upload.single('archivo'), directChatController.sendDirectMessage);
 
 module.exports = router;

@@ -245,6 +245,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useToastStore } from '@/stores/toast'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseModal from '@/components/base/BaseModal.vue'
@@ -255,6 +256,7 @@ import { getExcludedNumbers, addExcludedNumber, updateExcludedNumber, removeExcl
 
 const router = useRouter()
 const authStore = useAuthStore()
+const toast = useToastStore()
 
 const numbers = ref([])
 const loading = ref(false)
@@ -348,13 +350,13 @@ const handleAdd = async () => {
     if (response.success) {
       showAddModal.value = false
       await fetchNumbers()
-      alert('✅ Número agregado exitosamente')
+      toast.success('Número agregado exitosamente')
     } else {
-      alert(response.error || 'Error al agregar el número')
+      toast.error(response.error || 'Error al agregar el número')
     }
   } catch (err) {
     console.error('Error adding excluded number:', err)
-    alert(err.response?.data?.error || 'Error de conexión')
+    toast.error(err.response?.data?.error || 'Error de conexión')
   } finally {
     addLoading.value = false
   }
@@ -382,13 +384,13 @@ const handleUpdate = async () => {
     if (response.success) {
       showEditModal.value = false
       await fetchNumbers()
-      alert('✅ Número actualizado exitosamente')
+      toast.success('Número actualizado exitosamente')
     } else {
-      alert(response.error || 'Error al actualizar el número')
+      toast.error(response.error || 'Error al actualizar el número')
     }
   } catch (err) {
     console.error('Error updating excluded number:', err)
-    alert(err.response?.data?.error || 'Error de conexión')
+    toast.error(err.response?.data?.error || 'Error de conexión')
   } finally {
     editLoading.value = false
   }
@@ -408,13 +410,13 @@ const handleRemove = async () => {
     if (response.success) {
       showRemoveConfirm.value = false
       await fetchNumbers()
-      alert('✅ Número eliminado correctamente')
+      toast.success('Número eliminado correctamente')
     } else {
-      alert(response.error || 'Error al eliminar el número')
+      toast.error(response.error || 'Error al eliminar el número')
     }
   } catch (err) {
     console.error('Error removing excluded number:', err)
-    alert(err.response?.data?.error || 'Error de conexión')
+    toast.error(err.response?.data?.error || 'Error de conexión')
   } finally {
     removeLoading.value = false
     selectedItem.value = null
