@@ -63,6 +63,13 @@ model Ticket {
   @@index([creadoEn], map: "idx_tickets_creado_en")
   @@index([estado], map: "idx_tickets_estado")
   @@index([numeroCliente], map: "idx_tickets_numero_cliente")
+  // ÍNDICE ÚNICO PARCIAL (migración manual, NO representable en Prisma):
+  //   idx_unique_open_ticket ON tickets (numero_cliente) WHERE estado != 'cerrado'
+  // Aplicado vía prisma/migrations/20260828000000_unique_open_ticket_per_cliente/migration.sql
+  // Garantiza un solo ticket abierto por número (evita duplicados por concurrencia).
+  // CUIDADO: `prisma db push` podría descartar índices que no conoce; si se borra,
+  // reaplicar la migración con:
+  //   prisma db execute --file prisma/migrations/20260828000000_unique_open_ticket_per_cliente/migration.sql
   @@index([solicitudTransferenciaTecnicoId], map: "idx_tickets_solicitud_transferencia")
   @@index([tecnicoAsignadoId], map: "idx_tickets_tecnico_asignado")
   @@index([transferido], map: "idx_tickets_transferido")

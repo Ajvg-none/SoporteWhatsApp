@@ -12,5 +12,6 @@ yarn-error.log*
 .env
 
 # Archivos generados por Prisma
-/prisma/migrations/
+# NOTA: /prisma/migrations/ ya NO se ignora — la migración
+# 20260828000000_unique_open_ticket_per_cliente (índice único parcial) se versiona.
 

@@ -6,13 +6,13 @@
     <Transition name="tooltip">
       <div
         v-if="text && isVisible"
-        class="absolute z-50 px-3 py-2 text-xs font-semibold text-white bg-slate-900 dark:bg-slate-700 rounded-lg shadow-lg whitespace-nowrap pointer-events-none"
+        class="absolute z-50 px-3 py-2 text-xs font-semibold text-white bg-gray-900 dark:bg-gray-700 rounded-lg shadow-lg whitespace-nowrap pointer-events-none"
         :class="positionClasses"
       >
         {{ text }}
         <!-- Arrow -->
         <div
-          class="absolute w-2 h-2 bg-slate-900 dark:bg-slate-700 transform rotate-45"
+          class="absolute w-2 h-2 bg-gray-900 dark:bg-gray-700 transform rotate-45"
           :class="arrowClasses"
         ></div>
       </div>

@@ -4,13 +4,13 @@
       <div
         v-for="notification in notifications"
         :key="notification.id"
-        class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 p-4 flex items-start gap-3 animate-slideIn"
+        class="bg-white dark:bg-card-dark rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-500 p-4 flex items-start gap-3 animate-slideIn"
         :class="{
           'border-l-4 border-l-primary': notification.type === 'nuevo_mensaje_cliente',
           'border-l-4 border-l-green-500': notification.type === 'ticket_asignado',
           'border-l-4 border-l-purple-500': notification.type === 'solicitud_transferencia',
           'border-l-4 border-l-amber-500': notification.type === 'ticket_reasignado',
-          'border-l-4 border-l-blue-500': notification.type === 'nuevo_ticket_disponible'
+          'border-l-4 border-l-primary': notification.type === 'nuevo_ticket_disponible'
         }"
       >
         <!-- Icono según tipo -->
@@ -39,21 +39,21 @@
         <!-- Contenido -->
         <div class="flex-1 min-w-0">
           <div class="flex items-center justify-between gap-2">
-            <p class="text-sm font-bold text-slate-800 dark:text-white truncate">
+            <p class="text-sm font-bold text-gray-800 dark:text-white truncate">
               {{ getNotificationTitle(notification.type) }}
             </p>
             <button 
               @click="removeNotification(notification.id)"
-              class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors cursor-pointer"
+              class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
-          <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{{ notification.mensaje }}</p>
+          <p class="text-xs text-gray-600 dark:text-gray-300 mt-0.5">{{ notification.mensaje }}</p>
           <div class="flex items-center gap-3 mt-2">
-            <span class="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+            <span class="text-[10px] font-semibold text-gray-400 dark:text-gray-300">
               {{ formatTime(notification.timestamp) }}
             </span>
             <router-link 
@@ -106,18 +106,18 @@ const NOTIFICATION_TYPES = {
   },
   'nuevo_ticket_disponible': {
     title: 'Nuevo ticket disponible',
-    iconBg: 'bg-blue-500/10',
-    iconColor: 'text-blue-500',
+    iconBg: 'bg-primary/10',
+    iconColor: 'text-primary',
     iconPath: 'M12 6v6m0 0v6m0-6h6m-6 0H6'
   }
 }
 
 const getIconBgClass = (type) => {
-  return NOTIFICATION_TYPES[type]?.iconBg || 'bg-slate-100'
+  return NOTIFICATION_TYPES[type]?.iconBg || 'bg-gray-100'
 }
 
 const getIconColorClass = (type) => {
-  return NOTIFICATION_TYPES[type]?.iconColor || 'text-slate-400'
+  return NOTIFICATION_TYPES[type]?.iconColor || 'text-gray-400'
 }
 
 const getIconPath = (type) => {

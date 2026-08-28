@@ -1,12 +1,12 @@
 <template>
   <div class="animate-fadeIn space-y-6">
-    <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 shrink-0">
+    <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-500 pb-4 shrink-0">
       <div>
         <div class="flex items-center gap-3">
-  <h1 class="text-xl font-black text-slate-800 dark:text-white">Ticket #{{ $route.params.id }}</h1>
+  <h1 class="text-xl font-black text-gray-800 dark:text-white">Ticket #{{ $route.params.id }}</h1>
   
   <!-- Badge de estado (siempre visible) -->
-  <BaseBadge v-if="ticket" :variant="getStatusVariant(ticket.estado)">
+  <BaseBadge v-if="ticket" :variant="getStatusVariant(ticket.estado)" :darkVariant="ticket.estado === 'asignado' ? 'azul' : ''">
     <span class="capitalize">{{ ticket.estado }}</span>
   </BaseBadge>
   
@@ -31,11 +31,11 @@
     </svg>
   </div>
 </div>
-        <p class="text-slate-450 dark:text-slate-400 text-xs mt-1 font-semibold">Detalle del ticket y historial de conversación</p>
+        <p class="text-gray-500 dark:text-gray-300 text-xs mt-1 font-semibold">Detalle del ticket y historial de conversación</p>
       </div>
       <button
         @click="$router.back()"
-        class="inline-flex items-center px-3.5 py-2 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-slate-105 dark:hover:bg-slate-800 border border-transparent hover:border-slate-200/50 dark:hover:border-slate-700/50 rounded-xl transition-all duration-200 cursor-pointer">
+        class="inline-flex items-center px-3.5 py-2 text-xs font-bold text-gray-500 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent hover:border-gray-200/50 dark:hover:border-gray-700/50 rounded-xl transition-all duration-200 cursor-pointer">
         <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
         </svg>
@@ -48,10 +48,10 @@
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
       </svg>
-      <span class="text-sm font-semibold text-slate-400 dark:text-slate-300">Cargando detalles del ticket...</span>
+      <span class="text-sm font-semibold text-gray-400 dark:text-gray-300">Cargando detalles del ticket...</span>
     </div>
 
-    <div v-else-if="errorMsg" class="p-8 text-center bg-white dark:bg-slate-900 rounded-3xl border border-red-100/80 dark:border-red-900/30 shadow-md">
+    <div v-else-if="errorMsg" class="p-8 text-center bg-white dark:bg-card-dark rounded-3xl border border-red-100/80 dark:border-red-900/30 shadow-md">
       <div class="inline-flex p-3 rounded-full bg-red-55 text-danger mb-2">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
       </div>
@@ -64,42 +64,42 @@
       
       <div class="space-y-6 lg:col-span-1 flex flex-col h-full overflow-hidden min-h-0">
         
-        <BaseCard class="border border-slate-100 dark:border-slate-800 shadow-sm shrink-0">
+        <BaseCard class="border border-gray-100 dark:border-gray-500 shadow-sm shrink-0">
           <template #header>
-            <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-400">Información del Cliente</h3>
+            <h3 class="text-xs font-extrabold uppercase tracking-wider text-gray-400 dark:text-gray-300">Información del Cliente</h3>
           </template>
           
           <div class="space-y-4">
             <div>
-              <label class="text-[10px] text-slate-400 dark:text-slate-400 font-bold uppercase tracking-wider">Nombre</label>
-              <p class="text-sm font-bold text-slate-800 dark:text-white mt-0.5">{{ contacto?.nombre || 'Cliente sin registrar' }}</p>
+              <label class="text-[10px] text-gray-400 dark:text-gray-300 font-bold uppercase tracking-wider">Nombre</label>
+              <p class="text-sm font-bold text-gray-800 dark:text-white mt-0.5">{{ contacto?.nombre || 'Cliente sin registrar' }}</p>
             </div>
             <div>
-              <label class="text-[10px] text-slate-400 dark:text-slate-400 font-bold uppercase tracking-wider">Teléfono / WhatsApp</label>
-              <p class="text-xs font-bold text-slate-700 dark:text-slate-200 font-mono mt-0.5">{{ formatPhone(contacto?.numero_telefono || ticket.numeroCliente) }}</p>
+              <label class="text-[10px] text-gray-400 dark:text-gray-300 font-bold uppercase tracking-wider">Teléfono / WhatsApp</label>
+              <p class="text-xs font-bold text-gray-700 dark:text-gray-200 font-mono mt-0.5">{{ formatPhone(contacto?.numero_telefono || ticket.numeroCliente) }}</p>
             </div>
             <div>
-              <label class="text-[10px] text-slate-400 dark:text-slate-400 font-bold uppercase tracking-wider">Sucursal</label>
-              <p class="text-xs font-bold text-slate-700 dark:text-slate-200 mt-0.5">{{ contacto?.sucursal || 'Sin sucursal asignada' }}</p>
+              <label class="text-[10px] text-gray-400 dark:text-gray-300 font-bold uppercase tracking-wider">Sucursal</label>
+              <p class="text-xs font-bold text-gray-700 dark:text-gray-200 mt-0.5">{{ contacto?.sucursal || 'Sin sucursal asignada' }}</p>
             </div>
             <div>
-              <label class="text-[10px] text-slate-400 dark:text-slate-400 font-bold uppercase tracking-wider">Creado el</label>
-              <p class="text-xs font-semibold text-slate-600 dark:text-slate-300 mt-0.5">{{ formatDate(ticket.creadoEn) }}</p>
+              <label class="text-[10px] text-gray-400 dark:text-gray-300 font-bold uppercase tracking-wider">Creado el</label>
+              <p class="text-xs font-semibold text-gray-600 dark:text-gray-300 mt-0.5">{{ formatDate(ticket.creadoEn) }}</p>
             </div>
           </div>
         </BaseCard>
 
-        <BaseCard class="border border-slate-100 dark:border-slate-800 shadow-sm shrink-0">
+        <BaseCard class="border border-gray-100 dark:border-gray-500 shadow-sm shrink-0">
           <template #header>
-            <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-400">Responsable y Estado</h3>
+            <h3 class="text-xs font-extrabold uppercase tracking-wider text-gray-400 dark:text-gray-300">Responsable y Estado</h3>
           </template>
           
           <div class="space-y-4">
             <div>
-          <label class="text-[10px] text-slate-400 dark:text-slate-400 font-bold uppercase tracking-wider">Técnico Asignado</label>
+          <label class="text-[10px] text-gray-400 dark:text-gray-300 font-bold uppercase tracking-wider">Técnico Asignado</label>
           <div class="flex items-center gap-2 mt-1.5">
-            <span class="w-2 h-2 rounded-full animate-pulse" :class="ticket.tecnicoAsignadoId ? 'bg-sky-500' : 'bg-slate-300 dark:bg-slate-700'"></span>
-            <span class="text-xs font-bold text-slate-700 dark:text-white">
+            <span class="w-2 h-2 rounded-full animate-pulse" :class="ticket.tecnicoAsignadoId ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-700'"></span>
+            <span class="text-xs font-bold text-gray-700 dark:text-white">
               {{ tecnicoAsignado?.nombre || 'Sin asignar' }}
             </span>
           </div>
@@ -135,7 +135,7 @@
               <BaseTooltip :text="!canRequestTransfer ? transferDisabledTooltip : ''" position="top">
                 <BaseButton
                   variant="secondary"
-                  class="w-full flex items-center justify-center border-slate-200/80 dark:border-slate-700/60 cursor-pointer text-xs font-bold shadow-xs"
+                  class="w-full flex items-center justify-center border-gray-200/80 dark:border-gray-700/60 cursor-pointer text-xs font-bold shadow-xs"
                   :disabled="!canRequestTransfer"
                   @click="handleTransferCase"
                 >
@@ -176,19 +176,19 @@
   </BaseButton>
 </div>
 
-<div v-if="ticket.transferido" class="pt-2 mt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-purple-700 dark:text-purple-400">
+<div v-if="ticket.transferido" class="pt-2 mt-4 border-t border-gray-100 dark:border-gray-500 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-purple-700 dark:text-purple-400">
   <BaseBadge variant="purple">✔ Transferido</BaseBadge>
   <span>Caso transferido anteriormente</span>
 </div>
           </div>
         </BaseCard>
 
-        <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800/80 flex-1 flex flex-col min-h-0 overflow-hidden">
-          <div class="px-6 py-4.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-900/30 shrink-0">
-            <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-white">Bitácora de Auditoría</h3>
+        <div class="bg-white dark:bg-card-dark rounded-2xl shadow-sm border border-gray-100 dark:border-gray-500 flex-1 flex flex-col min-h-0 overflow-hidden">
+          <div class="px-6 py-4.5 border-b border-gray-100 dark:border-gray-500 bg-gray-50/20 dark:bg-card-dark shrink-0">
+            <h3 class="text-xs font-extrabold uppercase tracking-wider text-gray-700 dark:text-white">Bitácora de Auditoría</h3>
           </div>
           
-          <div v-if="auditoria.length === 0" class="text-center py-6 text-xs text-slate-400 dark:text-slate-400 font-semibold italic shrink-0">
+          <div v-if="auditoria.length === 0" class="text-center py-6 text-xs text-gray-400 dark:text-gray-300 font-semibold italic shrink-0">
             Sin registros de auditoría aún.
           </div>
           
@@ -197,23 +197,23 @@
               <ul role="list" class="-mb-5">
                 <li v-for="(item, idx) in auditoria" :key="item.id">
                   <div class="relative pb-5">
-                    <span v-if="idx !== auditoria.length - 1" class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-slate-100 dark:bg-slate-800" aria-hidden="true"></span>
+                    <span v-if="idx !== auditoria.length - 1" class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-100 dark:bg-gray-800" aria-hidden="true"></span>
                     <div class="relative flex space-x-3.5">
                       <div>
-                        <span class="h-8 w-8 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-100/50 dark:border-sky-900/30 flex items-center justify-center ring-4 ring-white dark:ring-slate-900 text-xs">
+                        <span class="h-8 w-8 rounded-xl bg-primary-light dark:bg-[#4a5e0f] border border-primary-light/50 dark:border-[#4a5e0f] flex items-center justify-center ring-4 ring-white dark:ring-card-dark text-xs">
                           🔧
                         </span>
                       </div>
                       <div class="flex-1 min-w-0 pt-1 flex justify-between space-x-4">
                         <div>
-                          <p class="text-xs font-semibold text-slate-500 dark:text-slate-300">
-                            <b class="text-slate-800 dark:text-white capitalize font-bold">{{ formatAuditAction(item.accion) }}</b> por <span class="font-bold text-slate-700 dark:text-white">{{ item.usuarioNombre }}</span>
+                          <p class="text-xs font-semibold text-gray-500 dark:text-gray-300">
+                            <b class="text-gray-800 dark:text-white capitalize font-bold">{{ formatAuditAction(item.accion) }}</b> por <span class="font-bold text-gray-700 dark:text-white">{{ item.usuarioNombre }}</span>
                           </p>
-                          <p class="text-[10px] font-medium text-slate-400 dark:text-slate-400 mt-1">
+                          <p class="text-[10px] font-medium text-gray-400 dark:text-gray-300 mt-1">
                             {{ formatAuditDetails(item) }}
                           </p>
                         </div>
-                        <div class="text-right text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 whitespace-nowrap">
+                        <div class="text-right text-[9px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-300 whitespace-nowrap">
                           {{ formatDate(item.fechaHora) }}
                         </div>
                       </div>
@@ -280,16 +280,16 @@
 </div>
 </div>
 
-<div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800/80 flex flex-col flex-1 min-h-0 overflow-hidden">
-          <div class="px-6 py-4.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-900/30 flex items-center justify-between shrink-0">
-            <h3 class="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Historial de Conversación</h3>
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300 border border-emerald-100/60 dark:border-emerald-900/30 rounded-lg text-[10px] font-extrabold uppercase tracking-wider">
+<div class="bg-white dark:bg-card-dark rounded-2xl shadow-sm border border-gray-100 dark:border-gray-500 flex flex-col flex-1 min-h-0 overflow-hidden">
+          <div class="px-6 py-4.5 border-b border-gray-100 dark:border-gray-500 bg-gray-50/20 dark:bg-card-dark flex items-center justify-between shrink-0">
+            <h3 class="text-sm font-bold text-gray-800 dark:text-white uppercase tracking-wider">Historial de Conversación</h3>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-500 text-emerald-700 dark:text-white border border-emerald-100/60 dark:border-emerald-400 rounded-lg text-[10px] font-extrabold uppercase tracking-wider">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
               WhatsApp Activo
             </span>
           </div>
 
-          <div ref="chatContainer" class="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/20 dark:bg-slate-950/10 scroll-smooth min-h-0">
+          <div ref="chatContainer" class="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50/20 dark:bg-background-dark/10 scroll-smooth min-h-0">
             <div
               v-for="msg in mensajes"
               :key="msg.id"
@@ -300,7 +300,7 @@
                 class="max-w-[75%] rounded-2xl px-4 py-3 shadow-xs text-sm"
                 :class="msg.remitente === 'tecnico' 
                   ? 'bg-gradient-to-tr from-primary to-primary-hover text-white rounded-tr-none' 
-                  : 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/60 text-slate-800 dark:text-white rounded-tl-none'"
+                  : 'bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 text-gray-800 dark:text-white rounded-tl-none'"
               >
                 <div class="text-[9px] font-extrabold tracking-wider uppercase mb-1.5 opacity-75 flex items-center gap-1">
                   <span>{{ msg.remitente === 'tecnico' ? (msg.tecnicoNombre || 'Cuenta WhatsApp') : (contacto?.nombre || 'Cliente') }}</span>
@@ -308,7 +308,7 @@
 
                 <p v-if="msg.contenido && (!msg.urlAdjunto || !msg.contenido.startsWith('[Archivo: '))" class="whitespace-pre-wrap break-words leading-relaxed font-medium text-xs md:text-sm">{{ msg.contenido }}</p>
 
-                <div v-if="msg.urlAdjunto" class="mt-2.5 pt-2 border-t" :class="msg.remitente === 'tecnico' ? 'border-white/15' : 'border-slate-100 dark:border-slate-700/70'">
+                <div v-if="msg.urlAdjunto" class="mt-2.5 pt-2 border-t" :class="msg.remitente === 'tecnico' ? 'border-white/15' : 'border-gray-100 dark:border-gray-700/70'">
                   
                   <!-- Imagen -->
                   <div v-if="msg.tipo === 'imagen'" class="overflow-hidden rounded-xl border border-black/5 dark:border-white/5 mt-1 max-w-[280px]">
@@ -326,7 +326,7 @@
                       class="flex items-center gap-3.5 p-3 rounded-2xl border transition-all duration-200"
                       :class="msg.remitente === 'tecnico'
                         ? 'bg-white/10 border-white/20 text-white'
-                        : 'bg-slate-50 dark:bg-slate-800 border-slate-200/60 dark:border-slate-700/60 text-slate-700 dark:text-white'"
+                        : 'bg-gray-50 dark:bg-gray-800 border-gray-200/60 dark:border-gray-700/60 text-gray-700 dark:text-white'"
                     >
                       <!-- Elemento de audio HTML5 invisible -->
                       <audio 
@@ -365,13 +365,13 @@
                           :value="msg._currentTime || 0"
                           @input="e => { if (msg._audioEl) msg._audioEl.currentTime = parseFloat(e.target.value) }"
                           class="w-full h-1 rounded-lg appearance-none cursor-pointer accent-current opacity-85 hover:opacity-100 transition-opacity outline-none"
-                          :class="msg.remitente === 'tecnico' ? 'bg-white/30 text-white' : 'bg-slate-200 dark:bg-slate-700 text-primary'"
+                          :class="msg.remitente === 'tecnico' ? 'bg-white/30 text-white' : 'bg-gray-200 dark:bg-gray-700 text-primary'"
                         />
                         <div class="flex justify-between items-center text-[9px] font-bold font-mono tracking-wider">
-                          <span :class="msg.remitente === 'tecnico' ? 'text-white/70' : 'text-slate-400 dark:text-slate-400'">
+                          <span :class="msg.remitente === 'tecnico' ? 'text-white/70' : 'text-gray-400 dark:text-gray-300'">
                             {{ formatAudioTime(msg._currentTime || 0) }}
                           </span>
-                          <span :class="msg.remitente === 'tecnico' ? 'text-white/70' : 'text-slate-400 dark:text-slate-400'">
+                          <span :class="msg.remitente === 'tecnico' ? 'text-white/70' : 'text-gray-400 dark:text-gray-300'">
                             {{ formatAudioTime(msg._duration || 0) }}
                           </span>
                         </div>
@@ -396,7 +396,7 @@
                       class="flex items-center gap-3 p-3 rounded-xl transition-all duration-200 border w-full max-w-[280px] shadow-xs hover:shadow-sm"
                       :class="msg.remitente === 'tecnico' 
                         ? 'bg-white/10 border-white/20 text-white hover:bg-white/15' 
-                        : 'bg-slate-50 dark:bg-slate-800 border-slate-200/70 dark:border-slate-700/70 text-slate-700 dark:text-white hover:bg-slate-100/80 dark:hover:bg-slate-700/80'"
+                        : 'bg-gray-50 dark:bg-gray-800 border-gray-200/70 dark:border-gray-700/70 text-gray-700 dark:text-white hover:bg-gray-100/80 dark:hover:bg-gray-700/80'"
                     >
                       <!-- Icono de documento -->
                       <div 
@@ -412,13 +412,13 @@
                       <div class="flex-1 min-w-0 text-left">
                         <p 
                           class="text-xs font-bold truncate"
-                          :class="msg.remitente === 'tecnico' ? 'text-white' : 'text-slate-800 dark:text-white'"
+                          :class="msg.remitente === 'tecnico' ? 'text-white' : 'text-gray-800 dark:text-white'"
                         >
                           {{ msg.contenido && msg.contenido.startsWith('[Archivo: ') && msg.contenido.endsWith(']') ? msg.contenido.slice(10, -1) : msg.urlAdjunto.split('/').pop().replace(/^\d+-/, '') }}
                         </p>
                         <p 
                           class="text-[10px] font-semibold mt-0.5"
-                          :class="msg.remitente === 'tecnico' ? 'text-white/60' : 'text-slate-400 dark:text-slate-400'"
+                          :class="msg.remitente === 'tecnico' ? 'text-white/60' : 'text-gray-400 dark:text-gray-300'"
                         >
                           Haga clic para descargar
                         </p>
@@ -427,7 +427,7 @@
                       <!-- Botón de descarga -->
                       <div 
                         class="flex items-center justify-center w-7 h-7 rounded-full shrink-0 transition-colors"
-                        :class="msg.remitente === 'tecnico' ? 'text-white hover:bg-white/10' : 'text-slate-400 dark:text-slate-400 hover:text-primary dark:hover:text-primary hover:bg-slate-200/55 dark:hover:bg-slate-700/60'"
+                        :class="msg.remitente === 'tecnico' ? 'text-white hover:bg-white/10' : 'text-gray-400 dark:text-gray-300 hover:text-primary dark:hover:text-primary hover:bg-gray-200/55 dark:hover:bg-gray-700/60'"
                       >
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -437,21 +437,21 @@
                   </div>
                 </div>
 
-                <div class="text-[9px] text-right mt-1.5 font-bold uppercase tracking-wider" :class="msg.remitente === 'tecnico' ? 'text-white/60' : 'text-slate-400 dark:text-slate-400'">
+                <div class="text-[9px] text-right mt-1.5 font-bold uppercase tracking-wider" :class="msg.remitente === 'tecnico' ? 'text-white/60' : 'text-gray-400 dark:text-gray-300'">
                   {{ formatTime(msg.enviadoEn) }}
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="p-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
-            <div v-if="selectedFile" class="mb-3.5 p-2 bg-slate-50 dark:bg-slate-800/40 border border-slate-150 dark:border-slate-700/60 rounded-xl flex items-center justify-between">
+          <div class="p-4 border-t border-gray-100 dark:border-gray-500 bg-white dark:bg-card-dark shrink-0">
+            <div v-if="selectedFile" class="mb-3.5 p-2 bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/60 rounded-xl flex items-center justify-between">
               <div class="flex items-center gap-2 overflow-hidden mr-2">
-                <svg class="w-4.5 h-4.5 text-slate-405 dark:text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
-                <span class="text-xs text-slate-700 dark:text-white truncate font-semibold">{{ selectedFile.name }}</span>
-                <span class="text-[10px] text-slate-400 dark:text-slate-400 font-mono">({{ formatBytes(selectedFile.size) }})</span>
+                <svg class="w-4.5 h-4.5 text-gray-400 dark:text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                <span class="text-xs text-gray-700 dark:text-white truncate font-semibold">{{ selectedFile.name }}</span>
+                <span class="text-[10px] text-gray-400 dark:text-gray-300 font-mono">({{ formatBytes(selectedFile.size) }})</span>
               </div>
-              <button @click="clearSelectedFile" class="text-slate-400 hover:text-danger p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full cursor-pointer">
+              <button @click="clearSelectedFile" class="text-gray-400 hover:text-danger p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full cursor-pointer">
                 <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
@@ -468,7 +468,7 @@
               <button
                 type="button"
                 @click="triggerFileSelect"
-                class="inline-flex items-center justify-center p-3 rounded-xl border border-slate-200/80 dark:border-slate-700/60 text-slate-400 hover:text-primary dark:hover:text-primary hover:border-primary/30 dark:hover:border-primary/30 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-200 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer mb-[1px]"
+                class="inline-flex items-center justify-center p-3 rounded-xl border border-gray-200/80 dark:border-gray-700/60 text-gray-400 hover:text-primary dark:hover:text-primary hover:border-primary/30 dark:hover:border-primary/30 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer mb-[1px]"
                 :disabled="isReadOnly"
                 title="Adjuntar archivo"
               >
@@ -488,7 +488,7 @@
                 placeholder="Escribe tu mensaje aquí..."
                 rows="1"
                 style="resize: none; max-height: 120px;"
-                class="flex-1 px-4.5 py-2.5 bg-slate-50 dark:bg-slate-800/40 border border-slate-250/70 dark:border-slate-700/60 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-white transition-all duration-200 placeholder-slate-400 dark:placeholder-slate-500 disabled:opacity-50 min-h-[40px] align-bottom"
+                class="flex-1 px-4.5 py-2.5 bg-white dark:bg-gray-800/40 border border-gray-300/70 dark:border-gray-700/60 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary focus:bg-white dark:focus:bg-gray-800 text-gray-900 dark:text-white transition-all duration-200 placeholder-gray-400 dark:placeholder-gray-500 disabled:opacity-50 min-h-[40px] align-bottom"
                 :disabled="isReadOnly || sendLoading"
               ></textarea>
 
@@ -532,7 +532,7 @@ variant="danger"
   size="md"
 >
   <div class="space-y-4">
-    <p class="text-sm text-slate-600 dark:text-slate-400">
+    <p class="text-sm text-gray-600 dark:text-gray-300">
       <template v-if="modalMode === 'forceAssign'">
         Como supervisor, puedes reasignar este ticket directamente a otro técnico
         <b>sin necesidad de su aprobación</b>. La acción quedará registrada en la auditoría.
@@ -544,7 +544,7 @@ variant="danger"
     </p>
     <!-- Buscador -->
     <div class="relative">
-      <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+      <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
@@ -553,12 +553,12 @@ variant="danger"
         v-model="technicianSearch"
         type="text"
         placeholder="Buscar técnico por nombre o email..."
-        class="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/65 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all duration-200 placeholder-slate-400 dark:placeholder-slate-500"
+        class="w-full pl-9 pr-4 py-2.5 bg-white dark:bg-gray-800/40 border border-gray-200/60 dark:border-gray-700/65 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all duration-200 placeholder-gray-400 dark:placeholder-gray-500"
       />
     </div>
     <!-- Lista de técnicos -->
-    <div class="max-h-64 overflow-y-auto border border-slate-200/60 dark:border-slate-700/60 rounded-xl">
-      <div v-if="filteredTechnicians.length === 0" class="p-6 text-center text-sm text-slate-400 dark:text-slate-500">
+    <div class="max-h-64 overflow-y-auto border border-gray-200/60 dark:border-gray-700/60 rounded-xl">
+      <div v-if="filteredTechnicians.length === 0" class="p-6 text-center text-sm text-gray-400 dark:text-gray-300">
         No se encontraron técnicos disponibles.
       </div>
       <button
@@ -566,7 +566,7 @@ variant="danger"
         :key="tech.id"
         type="button"
         @click="selectedTechnicianId = tech.id"
-        class="w-full px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors duration-150 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 last:border-b-0 cursor-pointer"
+        class="w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-150 flex items-center justify-between border-b border-gray-100 dark:border-gray-500 last:border-b-0 cursor-pointer"
         :class="{
           'bg-primary/5 dark:bg-primary/10': selectedTechnicianId === tech.id
         }"
@@ -576,8 +576,8 @@ variant="danger"
             {{ tech.nombre.charAt(0).toUpperCase() }}
           </div>
           <div class="min-w-0">
-            <p class="text-sm font-bold text-slate-800 dark:text-white truncate">{{ tech.nombre }}</p>
-            <p class="text-xs text-slate-500 dark:text-slate-400 truncate">{{ tech.email }}</p>
+            <p class="text-sm font-bold text-gray-800 dark:text-white truncate">{{ tech.nombre }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-300 truncate">{{ tech.email }}</p>
           </div>
         </div>
         <svg
