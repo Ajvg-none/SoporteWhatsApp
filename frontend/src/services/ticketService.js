@@ -82,6 +82,16 @@ export async function getTransferenciasPendientes() {
   return response.data
 }
 
+/**
+ * Crear un ticket manual hacia un contacto registrado
+ * @param {string} numero - Número del contacto
+ * @returns {Promise} Respuesta de la API
+ */
+export async function createManualTicket(numero) {
+  const response = await api.post('/tickets/crear', { numero })
+  return response.data
+}
+
 export default {
   changeStatus,
   closeTicket,
@@ -90,5 +100,6 @@ export default {
   rejectTransfer,
   forceAssign,
   getTechnicians,
-  getTransferenciasPendientes
+  getTransferenciasPendientes,
+  createManualTicket
 }

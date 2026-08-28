@@ -8,6 +8,7 @@
     "start": "node src/app.js",
     "seed": "node prisma/seed.js",
     "cleanup": "node -e \"require('./src/services/cleanupService').ejecutarLimpieza()\"",
+    "backfill-lids": "node src/scripts/backfillLids.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "prisma": {

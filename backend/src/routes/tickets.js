@@ -31,6 +31,13 @@ router.get('/', verifyToken, ticketController.getTickets);
 router.get('/counts', verifyToken, ticketController.getTicketCounts);
 
 /**
+ * POST /api/tickets/crear
+ * Crear un ticket manual hacia un contacto registrado (técnicos y supervisores)
+ * ✅ Requiere: verifyToken
+ */
+router.post('/crear', verifyToken, ticketController.createManualTicket);
+
+/**
  * GET /api/tickets/:id
  * Detalle completo de un ticket
  * Requiere autenticación

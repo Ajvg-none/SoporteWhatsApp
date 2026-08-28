@@ -1,7 +1,7 @@
 // backend/src/controllers/webhookController.js
 const { PrismaClient } = require('@prisma/client');
 const { findOrCreateContact } = require('../services/contactService');
-const { findOrCreateOpenTicket } = require('../services/ticketService');
+const { findOrCreateOpenTicket, resolverIdentidad } = require('../services/ticketService');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
@@ -102,7 +102,13 @@ exports.receiveWebhook = async (req, res) => {
 
     const { event, sessionId, idempotencyKey, data } = payload;
 
-    // B10: solo procesamos mensajes entrantes (otros eventos se acusan y se ignoran)
+    // B10: procesamos mensajes entrantes (message.received) y, para el historial,
+    // también los salientes desde la propia cuenta (message.sent con fromMe),
+    // p. ej. cuando el operador responde desde el teléfono fuera del sistema.
+    if (event === 'message.sent' && data?.fromMe) {
+      return procesarMensajeSaliente(data, res);
+    }
+    // Otros eventos se acusan y se ignoran
     if (event !== 'message.received') {
       return res.status(200).json({ status: 'ok', event });
     }
@@ -120,13 +126,16 @@ exports.receiveWebhook = async (req, res) => {
     // ============================================================
     const {
       id: whatsappMessageId, // ID único del mensaje en WhatsApp
-      from,                  // Número del remitente "5215512345678@c.us"
+      from,                  // Número del remitente "5215512345678@c.us" (o "...@lid" si es privacy-id)
       body,                  // Texto del mensaje
       type,                  // "text" | "image" | "video" | "audio" | "document" | ...
       timestamp,             // Fecha/hora del mensaje (timestamp Unix)
       hasMedia,
       media,                 // { mimetype, filename?, data?, omitted?, sizeBytes? } | null
-      pushName               // Nombre visible del remitente
+      pushName,              // Nombre visible del remitente
+      isLidSender,           // true cuando el remitente viene como @lid (privacy-id)
+      senderPhone,           // Nº real (dígitos MSISDN) sólo para remitentes @lid (nc RESOLVE_LID_TO_PHONE)
+      contact                // Datos de contacto sincronizados (id, number, name, pushName, ...)
     } = data;
 
     if (!from || !whatsappMessageId) {
@@ -138,6 +147,7 @@ exports.receiveWebhook = async (req, res) => {
     console.log(`💬 Contenido: ${body || '[Archivo/Imagen]'}`);
     console.log(`🆔 WhatsApp Message ID: ${whatsappMessageId}`);
     console.log(`📎 Tipo: ${type || 'texto'}`);
+    if (isLidSender) console.log(`🆔💰 Remitente @lid detectado. senderPhone: ${senderPhone ?? 'null'}`);
 
     // ============================================================
     // 2.5 REGLA DE EXCLUSIÓN / CHAT PRIVADO
@@ -188,13 +198,19 @@ exports.receiveWebhook = async (req, res) => {
     // ============================================================
     // 3. CREAR/OBTENER CONTACTO (S1-B06) — B9: aprovechar pushName
     // ============================================================
-    const contacto = await findOrCreateContact(from, { nombre: pushName || undefined });
+    // Resolver identidad: si el remitente es @lid, numeroVisible será el nº real
+    // (senderPhone) y lid será el @lid de retorno.
+    const { numeroVisible, lid } = resolverIdentidad(from, senderPhone);
+
+    const nombreContacto = pushName || contact?.name || contact?.pushName || undefined;
+
+    const contacto = await findOrCreateContact(numeroVisible, { nombre: nombreContacto, lid });
     console.log(`📇 Contacto: ${contacto.nombre || 'Sin nombre'} (${contacto.numero_telefono})`);
 
     // ============================================================
     // 4. CREAR/OBTENER TICKET ABIERTO (S1-B07)
     // ============================================================
-    const ticket = await findOrCreateOpenTicket(from);
+    const ticket = await findOrCreateOpenTicket(numeroVisible, { lid });
     console.log(`🎫 Ticket #${ticket.id} - Estado: ${ticket.estado}`);
 
     // ============================================================
@@ -289,3 +305,174 @@ exports.receiveWebhook = async (req, res) => {
     });
   }
 };
+
+/**
+ * Procesa un mensaje SALIENTE de la propia cuenta (evento `message.sent`, fromMe).
+ * Ocurre cuando el operador responde DESDE el teléfono conectado (fuera del sistema)
+ * o desde cualquier dispositivo vinculado. `data` es un IncomingMessage de OpenWA:
+ *   - from       → mi número (la cuenta)
+ *   - to/chatId  → el destinatario con quien converso (el cliente)
+ *   - body, type, timestamp, id (waMessageId), contact.pushName
+ *
+ * Objetivo: reflejar el mensaje en el ticket (o chat privado) correspondiente, con
+ * dedup por `whatsappMessageId` para no duplicar los envíos hechos desde el sistema
+ * (que también generan un echo message.sent).
+ */
+async function procesarMensajeSaliente(data, res) {
+  try {
+    const whatsappMessageId = data.id;
+    const from = data.from;       // mi número
+    const to = data.to || data.chatId; // el cliente destinatario
+    const body = data.body || '';
+    const timestamp = data.timestamp;
+
+    console.log(`\n📨 ========================================`);
+    console.log(`📨 MENSAJE SALIENTE (message.sent) → ${to}`);
+    console.log(`📨 ========================================`);
+
+    // 1. Descartar no-conversación
+    const destino = String(to || '').trim();
+    if (data.isGroup || destino.includes('@g.us') || data.isStatusBroadcast) {
+      console.log('⚠️ Mensaje saliente a grupo/estado ignorado');
+      return res.status(200).json({ status: 'ok', message: 'Non-conversation outgoing ignored' });
+    }
+
+    // 2. Normalizar identidad (el "cliente" es el destinatario `to`)
+    const { numeroVisible, lid } = resolverIdentidad(destino, null);
+
+    // 3. Exclusión / chat privado
+    const { esNumeroExcluido, obtenerTipoExclusion, obtenerAliasNumero } = require('./excludedNumberController');
+    const numeroExcluido = await esNumeroExcluido(destino);
+
+    if (numeroExcluido) {
+      const tipo = await obtenerTipoExclusion(destino);
+
+      if (tipo === 'chat_privado') {
+        // Dedup: si ya se guardó (envío del sistema), ignorar el echo
+        const existente = await prisma.mensajeDirecto.findUnique({
+          where: { whatsappMessageId }
+        });
+        if (existente) {
+          console.log(`⏭️ Echo saliente chat-privado duplicado ignorado: ${whatsappMessageId}`);
+          return res.status(200).json({ status: 'ok', message: 'Dup direct ignored' });
+        }
+
+        const numeroRemitente = numeroVisible.replace(/@c\.us|@g\.us|@lid/gi, '');
+        const alias = await obtenerAliasNumero(destino);
+        const tipoMensaje = mapTipo(data.type);
+
+        await prisma.mensajeDirecto.create({
+          data: {
+            numeroRemitente,
+            contenido: body || `[Archivo: ${tipoMensaje}]`,
+            tipo: tipoMensaje,
+            remitente: 'supervisor',
+            supervisorId: null,
+            whatsappMessageId,
+            enviadoEn: timestamp ? new Date(parseInt(timestamp) * 1000) : new Date()
+          }
+        });
+
+        const socketService = require('../services/socketService');
+        socketService.notifyAllSupervisors('respuesta_directa_enviada', {
+          numeroRemitente,
+          alias: alias || null,
+          supervisorNombre: 'Cuenta WhatsApp',
+          contenido: body,
+          enviado: true,
+          error: null,
+          timestamp: new Date()
+        });
+
+        console.log(`✅ Mensaje saliente guardado en chat privado: ${numeroRemitente}`);
+        return res.status(200).json({ status: 'ok', message: 'Direct chat updated', reason: 'chat_privado' });
+      }
+
+      console.log(`🚫 Mensaje saliente ignorado: ${destino} está excluido`);
+      return res.status(200).json({ status: 'ok', message: 'Excluded outgoing ignored', reason: 'excluded_number' });
+    }
+
+    // 4. Tickets
+    const mensajeExistente = await prisma.mensaje.findUnique({
+      where: { whatsappMessageId }
+    });
+    if (mensajeExistente) {
+      console.log(`⏭️ Echo saliente duplicado ignorado: ${whatsappMessageId}`);
+      return res.status(200).json({ status: 'ok', message: 'Mensaje duplicado ignorado', ticketId: mensajeExistente.ticketId });
+    }
+
+    // Garantizar que exista el contacto (Ticket.numeroCliente es FK a Contacto).
+    // Mismo comportamiento que el flujo entrante (message.received).
+    const nombreContacto = data.contact?.pushName || data.contact?.name || undefined;
+    await findOrCreateContact(numeroVisible, { nombre: nombreContacto, lid });
+
+    // Obtener/crear ticket abierto (si no existe uno, se crea — ver decisión del usuario)
+    const { findOrCreateOpenTicket } = require('../services/ticketService');
+    const ticket = await findOrCreateOpenTicket(numeroVisible, { lid });
+
+    // Registrar auditoría si el ticket se acabó de crear por este saliente
+    const mensajesExistentes = await prisma.mensaje.count({ where: { ticketId: ticket.id } });
+    if (mensajesExistentes === 0) {
+      const usuarioSistema = await prisma.usuario.findUnique({ where: { email: 'sistema@empresa.com' } });
+      if (usuarioSistema) {
+        await prisma.auditoria.create({
+          data: {
+            ticketId: ticket.id,
+            usuarioId: usuarioSistema.id,
+            accion: 'creacion',
+            detalle: { numero_cliente: numeroVisible, creado_por: 'saliente_telefono' },
+            fechaHora: new Date()
+          }
+        });
+      }
+    }
+
+    // Guardar mensaje saliente (remitente 'tecnico', técnico desconocido → NULL)
+    const tipoMensaje = mapTipo(data.type);
+    const result = await prisma.mensaje.createMany({
+      data: {
+        ticketId: ticket.id,
+        remitente: 'tecnico',
+        tecnicoId: null,
+        contenido: body || `[Archivo: ${data.media?.filename || tipoMensaje}]`,
+        tipo: tipoMensaje,
+        whatsappMessageId,
+        enviadoEn: timestamp ? new Date(parseInt(timestamp) * 1000) : new Date()
+      },
+      skipDuplicates: true
+    });
+
+    if (result.count === 0) {
+      console.log(`⏭️ Mensaje saliente duplicado ignorado: ${whatsappMessageId}`);
+      return res.status(200).json({ status: 'ok', message: 'Mensaje duplicado ignorado', ticketId: ticket.id });
+    }
+
+    console.log(`✅ Mensaje saliente guardado en ticket #${ticket.id}`);
+
+    // Notificar en vivo
+    const socketService = require('../services/socketService');
+    socketService.broadcast('nuevo_mensaje_ticket', {
+      ticketId: ticket.id,
+      numeroCliente: ticket.numeroCliente,
+      contenido: body || '[Archivo/Imagen]',
+      tipo: tipoMensaje,
+      urlAdjunto: null,
+      remitente: 'tecnico',
+      tecnicoNombre: null,
+      enviadoEn: timestamp ? new Date(parseInt(timestamp) * 1000) : new Date()
+    });
+
+    return res.status(200).json({
+      status: 'ok',
+      message: 'Outgoing message processed',
+      ticketId: ticket.id
+    });
+  } catch (error) {
+    console.error('❌ Error procesando mensaje saliente:', error);
+    if (error.code) {
+      console.error(`🔴 Código de error Prisma: ${error.code}`);
+      console.error(`🔴 Meta: ${JSON.stringify(error.meta || {})}`);
+    }
+    return res.status(500).json({ error: 'Internal server error', message: error.message });
+  }
+}

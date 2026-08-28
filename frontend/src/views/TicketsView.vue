@@ -6,9 +6,17 @@
         <h1 class="text-2xl font-black text-slate-800 dark:text-white tracking-tight">Gestión de Tickets</h1>
         <p class="text-slate-405 dark:text-slate-400 text-sm mt-1 font-medium">Monitorea y atiende los chats de soporte técnico.</p>
       </div>
-      <div class="flex items-center gap-2.5 bg-white dark:bg-slate-900 px-4 py-2 rounded-xl shadow-xs border border-slate-100 dark:border-slate-800 self-start md:self-auto">
-        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">Sesión activa como: <b class="text-slate-800 dark:text-white capitalize">{{ authStore.user?.rol }}</b></span>
+      <div class="flex items-center gap-2.5">
+        <BaseButton variant="primary" @click="openNewTicketModal">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Nuevo Ticket
+        </BaseButton>
+        <div class="bg-white dark:bg-slate-900 px-4 py-2 rounded-xl shadow-xs border border-slate-100 dark:border-slate-800 self-start md:self-auto flex items-center gap-2.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">Sesión activa como: <b class="text-slate-800 dark:text-white capitalize">{{ authStore.user?.rol }}</b></span>
+        </div>
       </div>
     </div>
 
@@ -227,20 +235,93 @@
         </div>
       </transition>
     </BaseCard>
+
+    <!-- Modal: Nuevo Ticket a un contacto registrado -->
+    <BaseModal v-model="showNewTicketModal" title="Nuevo Ticket" size="md">
+      <div class="space-y-4">
+        <p class="text-xs text-slate-500 dark:text-slate-400 font-semibold">
+          Selecciona un contacto registrado para crear un ticket (p. ej. escribirle a la tienda). El ticket quedará asignado a ti.
+        </p>
+        <div class="relative">
+          <svg class="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            v-model="contactSearch"
+            @input="searchContacts"
+            type="text"
+            placeholder="Buscar contacto por nombre o número..."
+            class="w-full pl-11 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/65 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all duration-200"
+          />
+        </div>
+
+        <!-- Lista de contactos -->
+        <div v-if="searchLoading" class="flex justify-center py-8">
+          <svg class="animate-spin h-7 w-7 text-primary" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+        </div>
+        <div v-else-if="contactOptions.length === 0" class="text-center py-8">
+          <p class="text-slate-500 dark:text-slate-400 text-sm font-semibold">No se encontraron contactos registrados</p>
+          <p class="text-xs text-slate-400 mt-1">Agrégalos desde el apartado Contáctos (supervisor)</p>
+        </div>
+        <div v-else class="max-h-72 overflow-y-auto border border-slate-100 dark:border-slate-800 rounded-xl divide-y divide-slate-100/40 dark:divide-slate-800/60">
+          <button
+            v-for="c in contactOptions"
+            :key="c.numero_telefono"
+            @click="selectContact(c)"
+            class="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-sky-50/60 dark:hover:bg-sky-950/20 transition-colors cursor-pointer"
+            :class="selectedContact?.numero_telefono === c.numero_telefono ? 'bg-sky-50 dark:bg-sky-950/30' : ''"
+          >
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-8 h-8 rounded-lg bg-sky-50 dark:bg-sky-950/30 border border-sky-100 dark:border-sky-900/40 text-primary flex items-center justify-center text-sm font-bold uppercase shrink-0">
+                {{ initials(c.nombre || c.numero_telefono) }}
+              </div>
+              <div class="min-w-0">
+                <div class="text-sm font-bold text-slate-800 dark:text-white truncate">{{ c.nombre || 'Sin nombre' }}</div>
+                <div class="text-xs font-mono text-slate-400">{{ formatPhone(c.numero_telefono) }}</div>
+              </div>
+            </div>
+            <svg v-if="selectedContact?.numero_telefono === c.numero_telefono" class="w-5 h-5 text-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div v-if="createError" class="mt-3 px-4 py-2.5 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-100 dark:border-red-900/40 text-xs font-semibold text-red-600 dark:text-red-400">
+        {{ createError }}
+      </div>
+      <template #footer>
+        <div class="flex gap-3 justify-end">
+          <BaseButton variant="secondary" @click="showNewTicketModal = false" :disabled="createLoading">
+            Cancelar
+          </BaseButton>
+          <BaseButton variant="primary" :loading="createLoading" :disabled="!selectedContact" @click="handleCreateTicket">
+            Crear Ticket
+          </BaseButton>
+        </div>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseBadge from '@/components/base/BaseBadge.vue'
+import BaseModal from '@/components/base/BaseModal.vue'
 import TransferenciasPendientes from '@/components/TransferenciasPendientes.vue'
 import socketService from '@/services/socketService'
+import { getContacts } from '@/services/contactService'
+import { createManualTicket } from '@/services/ticketService'
 
 const authStore = useAuthStore()
+const router = useRouter()
 
 const tickets = ref([]) 
 const loading = ref(false)
@@ -365,7 +446,7 @@ const getStatusVariant = (estado) => {
 
 const formatPhone = (phone) => {
   if (!phone) return ''
-  return phone.replace('@c.us', '')
+  return String(phone).replace(/@c\.us|@g\.us|@lid/gi, '').replace(/[\s\-\(\)]/g, '')
 }
 
 const formatDate = (dateStr) => {
@@ -378,6 +459,82 @@ const formatDate = (dateStr) => {
     hour: '2-digit',
     minute: '2-digit'
   })
+}
+
+// ============================================================
+// NUEVO TICKET (manual a un contacto registrado)
+// ============================================================
+const showNewTicketModal = ref(false)
+const contactSearch = ref('')
+const contactOptions = ref([])
+const selectedContact = ref(null)
+const searchLoading = ref(false)
+const createLoading = ref(false)
+const createError = ref('')
+
+const openNewTicketModal = () => {
+  showNewTicketModal.value = true
+  contactSearch.value = ''
+  selectedContact.value = null
+  createError.value = ''
+  searchContacts()
+}
+
+let contactSearchTimeout = null
+const searchContacts = () => {
+  if (contactSearchTimeout) clearTimeout(contactSearchTimeout)
+  contactSearchTimeout = setTimeout(async () => {
+    searchLoading.value = true
+    try {
+      const res = await getContacts({ buscar: contactSearch.value || undefined, limit: 50 })
+      contactOptions.value = (res && res.data) || []
+    } catch (e) {
+      console.error('Error cargando contactos:', e)
+      contactOptions.value = []
+    } finally {
+      searchLoading.value = false
+    }
+  }, 250)
+}
+
+const selectContact = (c) => {
+  selectedContact.value = selectedContact.value?.numero_telefono === c.numero_telefono ? null : c
+}
+
+const initials = (name) => {
+  const str = String(name || '').trim()
+  if (!str) return '?'
+  const parts = str.split(/\s+/)
+  return (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase()
+}
+
+const handleCreateTicket = async () => {
+  if (!selectedContact.value || createLoading.value) return
+  createLoading.value = true
+  createError.value = ''
+  try {
+    const res = await createManualTicket(selectedContact.value.numero_telefono)
+    const ticketId = res?.data?.ticket?.id
+    const yaExistente = res?.data?.yaExistente
+    showNewTicketModal.value = false
+    if (!ticketId) {
+      createError.value = res?.message || 'No se pudo crear el ticket.'
+      showNewTicketModal.value = true
+      return
+    }
+    if (yaExistente) {
+      await fetchTickets()
+      await fetchTicketCounts()
+    }
+    router.push(`/tickets/${ticketId}`)
+  } catch (error) {
+    createError.value = error.response?.data?.error || 'Error al crear el ticket.'
+    showNewTicketModal.value = false
+    // Re-abrir para mostrar el error
+    showNewTicketModal.value = true
+  } finally {
+    createLoading.value = false
+  }
 }
 
 // ============================================================
