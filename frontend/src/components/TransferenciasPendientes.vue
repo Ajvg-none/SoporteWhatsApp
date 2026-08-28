@@ -2,7 +2,7 @@
   <!-- Solo mostrar si hay transferencias pendientes -->
   <div v-if="transferencias.length > 0" class="mb-4">
     <!-- Tarjeta con borde morado -->
-    <div class="bg-white dark:bg-card-dark rounded-2xl shadow-sm border-l-4 border-l-purple-500 border border-gray-100/80 dark:border-gray-500 overflow-hidden">
+    <div class="bg-surface-card rounded-2xl shadow-sm border-l-4 border-l-purple-500 border border-edge overflow-hidden">
       
       <!-- Header de la tarjeta -->
       <div class="px-5 py-3 bg-purple-50/50 dark:bg-purple-950/20 border-b border-purple-100/50 dark:border-purple-900/30 flex items-center justify-between">
@@ -54,28 +54,28 @@
             <!-- Información izquierda -->
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-3 flex-wrap">
-                <span class="text-sm font-bold text-gray-800 dark:text-white">
+                <span class="text-sm font-bold text-body">
                   Ticket #{{ ticket.id }}
                 </span>
-                <BaseBadge :variant="getStatusVariant(ticket.estado)" :darkVariant="ticket.estado === 'asignado' ? 'azul' : ''" class="!text-[10px]">
+                <BaseBadge :variant="getStatusVariant(ticket.estado)" class="!text-[10px]">
                   {{ ticket.estado }}
                 </BaseBadge>
-                <span class="text-xs text-gray-500 dark:text-gray-300">
+                <span class="text-xs text-secondary">
                   {{ ticket.contacto?.nombre || 'Cliente sin registrar' }}
                 </span>
               </div>
               
               <div class="mt-1 flex items-center gap-4 flex-wrap text-xs">
-                <span class="text-gray-500 dark:text-gray-300 font-mono">
+                <span class="text-secondary font-mono">
                   {{ formatPhone(ticket.numeroCliente) }}
                 </span>
-                <span v-if="ticket.contacto?.sucursal" class="text-gray-500 dark:text-gray-300">
+                <span v-if="ticket.contacto?.sucursal" class="text-secondary">
                   🏢 {{ ticket.contacto.sucursal }}
                 </span>
                 <span class="text-purple-600 dark:text-purple-400 font-semibold">
                   👤 Solicita: {{ ticket.solicitante?.nombre || 'Técnico' }}
                 </span>
-                <span class="text-gray-400 dark:text-gray-300">
+                <span class="text-muted">
                   {{ formatDate(ticket.actualizadoEn) }}
                 </span>
               </div>
@@ -222,7 +222,7 @@ const handleReject = async () => {
 const getStatusVariant = (estado) => {
   const variants = {
     'nuevo': 'blue',
-    'asignado': 'green',
+    'asignado': 'purple',
     'esperando': 'yellow',
     'resuelto': 'green',
     'cerrado': 'gray'

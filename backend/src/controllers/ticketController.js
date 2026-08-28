@@ -106,6 +106,24 @@ exports.getTickets = async (req, res) => {
               nombre: true,
               email: true
             }
+          },
+          auditoria: {
+            where: {
+              accion: 'solicitud_transferencia'
+            },
+            orderBy: {
+              fechaHora: 'desc'
+            },
+            take: 1,
+            select: {
+              fechaHora: true,
+              usuario: {
+                select: {
+                  id: true,
+                  nombre: true
+                }
+              }
+            }
           }
         }
       }),

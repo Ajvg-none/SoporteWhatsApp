@@ -1,5 +1,6 @@
 <template>
-<span :class="[lightClasses, darkClasses]">
+  <span class="inline-flex items-center gap-1.5 border px-2.5 py-1 rounded-full text-[11px] font-bold leading-none whitespace-nowrap" :class="variantClasses">
+    <span v-if="dot" class="w-1.5 h-1.5 rounded-full bg-current shrink-0"></span>
     <slot />
   </span>
 </template>
@@ -9,28 +10,17 @@ import { computed } from 'vue'
 
 const props = defineProps({
   variant: { type: String, default: 'gray' }, // gray, blue, green, yellow, red, purple
-  darkVariant: { type: String, default: '' }  // override de paleta oscura (ej: 'azul')
+  dot: { type: Boolean, default: false }
 })
 
-const LIGHT = {
-  gray:  '!bg-gray-50 !text-gray-600 border-gray-200/80',
-  blue:  '!bg-primary-light !text-primary-dark border-primary/30',
-  green: '!bg-emerald-50 !text-emerald-700 border-emerald-200/80',
-  yellow: '!bg-amber-50 !text-amber-700 border-amber-200/80',
-  red:   '!bg-rose-50 !text-rose-700 border-rose-200/80',
-  purple: '!bg-purple-50 !text-purple-700 border-purple-200/80'
+const VARIANTS = {
+  gray:   '!bg-gray-50 !text-gray-600 border-gray-200 dark:!bg-gray-500/15 dark:!text-gray-300 dark:!border-gray-500/30',
+  blue:   '!bg-blue-50 !text-blue-700 border-blue-200 dark:!bg-blue-500/15 dark:!text-blue-300 dark:!border-blue-500/30',
+  green:  '!bg-emerald-50 !text-emerald-700 border-emerald-200 dark:!bg-emerald-500/15 dark:!text-emerald-300 dark:!border-emerald-500/30',
+  yellow: '!bg-amber-50 !text-amber-700 border-amber-200 dark:!bg-amber-500/15 dark:!text-amber-300 dark:!border-amber-500/30',
+  red:    '!bg-rose-50 !text-rose-700 border-rose-200 dark:!bg-red-500/15 dark:!text-red-300 dark:!border-red-500/30',
+  purple: '!bg-purple-50 !text-purple-700 border-purple-200 dark:!bg-purple-500/15 dark:!text-purple-300 dark:!border-purple-500/30'
 }
 
-const DARK = {
-  gray:   'dark:!bg-[#6B7280] dark:!text-white dark:!border-[#6B7280]',
-  blue:   'dark:!bg-primary dark:!text-white dark:!border-primary',
-  green:  'dark:!bg-[#10B981] dark:!text-white dark:!border-[#10B981]',
-  yellow: 'dark:!bg-[#F59E0B] dark:!text-white dark:!border-[#F59E0B]',
-  red:    'dark:!bg-[#F43F5E] dark:!text-white dark:!border-[#F43F5E]',
-  purple: 'dark:!bg-[#8B5CF6] dark:!text-white dark:!border-[#8B5CF6]',
-  azul:   'dark:!bg-[#3B82F6] dark:!text-white dark:!border-[#3B82F6]'
-}
-
-const lightClasses = computed(() => LIGHT[props.variant] || LIGHT.gray)
-const darkClasses = computed(() => DARK[props.darkVariant || props.variant] || DARK.gray)
+const variantClasses = computed(() => VARIANTS[props.variant] || VARIANTS.gray)
 </script>

@@ -3,8 +3,8 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Números Excluidos</h1>
-        <p class="text-gray-500 dark:text-gray-300 mt-1">
+        <h1 class="text-3xl font-bold text-body">Números Excluidos</h1>
+        <p class="text-secondary mt-1">
           Controla qué números generan tickets y cuáles van al chat privado
         </p>
       </div>
@@ -36,7 +36,7 @@
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
       </svg>
-      <span class="text-sm font-semibold text-gray-400">Cargando lista...</span>
+      <span class="text-sm font-semibold text-muted">Cargando lista...</span>
     </div>
 
     <!-- Error -->
@@ -48,31 +48,31 @@
 
     <!-- Empty -->
     <div v-else-if="numbers.length === 0" class="text-center py-16">
-      <div class="inline-flex p-4 rounded-full bg-gray-100 dark:bg-gray-800 mb-3">
-        <svg class="h-7 w-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="inline-flex p-4 rounded-full bg-input mb-3">
+        <svg class="h-7 w-7 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
         </svg>
       </div>
-      <p class="text-gray-700 dark:text-gray-300 font-bold text-sm">No hay números gestionados</p>
-      <p class="text-gray-400 text-xs font-semibold mt-1">Agrega el primer número para configurar su comportamiento</p>
+      <p class="text-secondary font-bold text-sm">No hay números gestionados</p>
+      <p class="text-muted text-xs font-semibold mt-1">Agrega el primer número para configurar su comportamiento</p>
     </div>
 
     <!-- Table -->
     <BaseCard v-else class="overflow-hidden">
       <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-100/40 dark:divide-gray-500">
-          <thead class="bg-gray-50/50 dark:bg-[#757575]">
+        <table class="min-w-full divide-y divide-edge">
+          <thead class="bg-surface-header">
             <tr>
-              <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-400 dark:text-gray-200 uppercase tracking-wider">Alias / Número</th>
-              <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-400 dark:text-gray-200 uppercase tracking-wider">Tipo</th>
-              <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-400 dark:text-gray-200 uppercase tracking-wider">Motivo</th>
-              <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-400 dark:text-gray-200 uppercase tracking-wider">Agregado por</th>
-              <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-400 dark:text-gray-200 uppercase tracking-wider">Fecha</th>
-              <th class="px-6 py-4 text-right text-[10px] font-extrabold text-gray-400 dark:text-gray-200 uppercase tracking-wider">Acciones</th>
+              <th class="px-6 py-4 text-left text-[10px] font-extrabold text-muted dark:text-body uppercase tracking-wider">Alias / Número</th>
+              <th class="px-6 py-4 text-left text-[10px] font-extrabold text-muted dark:text-body uppercase tracking-wider">Tipo</th>
+              <th class="px-6 py-4 text-left text-[10px] font-extrabold text-muted dark:text-body uppercase tracking-wider">Motivo</th>
+              <th class="px-6 py-4 text-left text-[10px] font-extrabold text-muted dark:text-body uppercase tracking-wider">Agregado por</th>
+              <th class="px-6 py-4 text-left text-[10px] font-extrabold text-muted dark:text-body uppercase tracking-wider">Fecha</th>
+              <th class="px-6 py-4 text-right text-[10px] font-extrabold text-muted dark:text-body uppercase tracking-wider">Acciones</th>
             </tr>
           </thead>
-          <tbody class="bg-white dark:bg-card-dark divide-y divide-gray-100/40 dark:divide-gray-500">
-            <tr v-for="item in numbers" :key="item.id" class="hover:bg-primary-light/10 dark:odd:bg-[#A9A9A9] dark:hover:bg-[#B4B4B4] transition-colors">
+          <tbody class="bg-surface-card divide-y divide-edge">
+            <tr v-for="item in numbers" :key="item.id" class="hover:bg-primary-light/10 dark:odd:bg-surface-zebra dark:hover:bg-surface-hover transition-colors">
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center gap-2">
                   <div class="w-8 h-8 rounded-lg flex items-center justify-center"
@@ -87,10 +87,10 @@
                     </svg>
                   </div>
                   <div>
-                    <div class="text-sm font-bold text-gray-800 dark:text-white">
+                    <div class="text-sm font-bold text-body">
                       {{ item.nombre || 'Sin alias' }}
                     </div>
-                    <div class="text-xs font-mono text-gray-400 dark:text-gray-300">
+                    <div class="text-xs font-mono text-muted">
                       {{ item.numeroFormateado }}
                     </div>
                   </div>
@@ -101,13 +101,13 @@
                   {{ item.tipoLabel }}
                 </BaseBadge>
               </td>
-              <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+              <td class="px-6 py-4 text-sm text-secondary">
                 {{ item.motivo || '—' }}
               </td>
-              <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+              <td class="px-6 py-4 text-sm text-secondary">
                 {{ item.creadoPor }}
               </td>
-              <td class="px-6 py-4 text-xs font-semibold text-gray-400">
+              <td class="px-6 py-4 text-xs font-semibold text-muted">
                 {{ formatDate(item.creadoEn) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-right">
@@ -149,26 +149,26 @@
           :error="formErrors.nombre"
         />
         <div>
-          <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-300 mb-1.5">
+          <label class="block text-xs font-bold uppercase tracking-wider text-muted mb-1.5">
             Tipo
           </label>
           <select
             v-model="form.tipo"
-            class="w-full px-4 py-2.5 bg-white dark:bg-gray-800/40 border border-gray-200/60 dark:border-gray-700/65 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all duration-200"
+            class="w-full px-4 py-2.5 bg-input border border-edge rounded-xl text-sm text-body focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all duration-200"
           >
             <option value="excluido">Excluido (no genera tickets)</option>
             <option value="chat_privado">Chat Privado (va al chat VIP)</option>
           </select>
         </div>
         <div>
-          <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-300 mb-1.5">
+          <label class="block text-xs font-bold uppercase tracking-wider text-muted mb-1.5">
             Motivo (opcional)
           </label>
           <textarea
             v-model="form.motivo"
             placeholder="Ej: Número interno de pruebas, Mensajes del administrador..."
             rows="2"
-            class="w-full px-4 py-2.5 bg-white dark:bg-gray-800/40 border border-gray-200/60 dark:border-gray-700/65 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all duration-200 placeholder-gray-400 dark:placeholder-gray-300"
+            class="w-full px-4 py-2.5 bg-input border border-edge rounded-xl text-sm text-body focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all duration-200 placeholder-gray-400 dark:placeholder-gray-300"
           ></textarea>
         </div>
       </form>
@@ -193,26 +193,26 @@
           placeholder="Ej: Soporte interno, Cliente VIP..."
         />
         <div>
-          <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-300 mb-1.5">
+          <label class="block text-xs font-bold uppercase tracking-wider text-muted mb-1.5">
             Tipo
           </label>
           <select
             v-model="editForm.tipo"
-            class="w-full px-4 py-2.5 bg-white dark:bg-gray-800/40 border border-gray-200/60 dark:border-gray-700/65 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all duration-200"
+            class="w-full px-4 py-2.5 bg-input border border-edge rounded-xl text-sm text-body focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all duration-200"
           >
             <option value="excluido">Excluido (no genera tickets)</option>
             <option value="chat_privado">Chat Privado (va al chat VIP)</option>
           </select>
         </div>
         <div>
-          <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-300 mb-1.5">
+          <label class="block text-xs font-bold uppercase tracking-wider text-muted mb-1.5">
             Motivo (opcional)
           </label>
           <textarea
             v-model="editForm.motivo"
             placeholder="Motivo de la exclusión..."
             rows="2"
-            class="w-full px-4 py-2.5 bg-white dark:bg-gray-800/40 border border-gray-200/60 dark:border-gray-700/65 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all duration-200 placeholder-gray-400 dark:placeholder-gray-300"
+            class="w-full px-4 py-2.5 bg-input border border-edge rounded-xl text-sm text-body focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all duration-200 placeholder-gray-400 dark:placeholder-gray-300"
           ></textarea>
         </div>
       </form>

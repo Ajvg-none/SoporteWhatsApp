@@ -23,7 +23,7 @@ defineEmits(['click'])
 
 const buttonClasses = computed(() => ({
   'bg-primary text-white hover:bg-primary-dark focus:ring-primary': props.variant === 'primary',
-  'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-700/60 hover:bg-gray-50 dark:hover:bg-gray-700/80 focus:ring-primary': props.variant === 'secondary',
+  'bg-input border border-edge text-body hover:bg-surface-hover focus:ring-primary': props.variant === 'secondary',
   'bg-danger text-white hover:bg-red-600 focus:ring-danger': props.variant === 'danger',
   'border-2 border-primary text-primary hover:bg-primary hover:text-white focus:ring-primary': props.variant === 'outline',
 }))

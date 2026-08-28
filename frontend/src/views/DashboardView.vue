@@ -3,22 +3,22 @@
     <!-- Header con selector de período -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
       <div>
-        <h1 class="text-3xl font-black text-gray-800 dark:text-white tracking-tight">Dashboard</h1>
-        <p class="text-gray-500 dark:text-gray-300 mt-1 text-sm font-semibold">
+        <h1 class="text-3xl font-black text-body tracking-tight">Dashboard</h1>
+        <p class="text-secondary mt-1 text-sm font-semibold">
           Resumen de actividad del sistema de soporte
         </p>
       </div>
 
       <!-- Selector de Período -->
-      <div class="flex items-center gap-2.5 bg-white dark:bg-card-dark px-4 py-2 rounded-xl shadow-xs border border-gray-100 dark:border-gray-500 self-start md:self-auto">
-        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="flex items-center gap-2.5 bg-surface-card px-4 py-2 rounded-xl shadow-xs border border-edge self-start md:self-auto">
+        <svg class="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
-        <span class="text-xs font-semibold text-gray-600 dark:text-gray-300">Período:</span>
+        <span class="text-xs font-semibold text-secondary">Período:</span>
         <select
           v-model="selectedPeriod"
           @change="handlePeriodChange"
-          class="bg-transparent text-sm font-bold text-gray-800 dark:text-white focus:outline-none cursor-pointer"
+          class="bg-transparent text-sm font-bold text-body focus:outline-none cursor-pointer"
         >
           <option value="hoy">Hoy</option>
           <option value="semana">Últimos 7 días</option>
@@ -33,11 +33,11 @@
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
       </svg>
-      <span class="text-sm font-semibold text-gray-400 dark:text-gray-300">Cargando estadísticas...</span>
+      <span class="text-sm font-semibold text-muted">Cargando estadísticas...</span>
     </div>
 
     <!-- Error State -->
-    <div v-else-if="error" class="p-8 text-center bg-white dark:bg-card-dark rounded-3xl border border-red-100/80 dark:border-red-900/30 shadow-md">
+    <div v-else-if="error" class="p-8 text-center bg-surface-card rounded-3xl border border-red-100/80 dark:border-red-900/30 shadow-md">
       <svg class="w-12 h-12 text-red-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
       </svg>
@@ -60,9 +60,9 @@
                 </svg>
               </div>
               <div class="ml-4 flex-1">
-                <p class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-300">Tickets Totales</p>
-                <p class="text-3xl font-black text-gray-800 dark:text-white mt-1">{{ stats.totalTickets || 0 }}</p>
-                <p class="text-xs text-gray-500 dark:text-gray-300 font-semibold mt-1">
+                <p class="text-xs font-bold uppercase tracking-wider text-muted">Tickets Totales</p>
+                <p class="text-3xl font-black text-body mt-1">{{ stats.totalTickets || 0 }}</p>
+                <p class="text-xs text-secondary font-semibold mt-1">
                   {{ periodLabel }}
                 </p>
               </div>
@@ -78,9 +78,9 @@
                 </svg>
               </div>
               <div class="ml-4 flex-1">
-                <p class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-300">Tickets Abiertos</p>
-                <p class="text-3xl font-black text-gray-800 dark:text-white mt-1">{{ stats.ticketsAbiertos || 0 }}</p>
-                <p class="text-xs text-gray-500 dark:text-gray-300 font-semibold mt-1">
+                <p class="text-xs font-bold uppercase tracking-wider text-muted">Tickets Abiertos</p>
+                <p class="text-3xl font-black text-body mt-1">{{ stats.ticketsAbiertos || 0 }}</p>
+                <p class="text-xs text-secondary font-semibold mt-1">
                   Nuevos + Asignados + Esperando
                 </p>
               </div>
@@ -96,9 +96,9 @@
                 </svg>
               </div>
               <div class="ml-4 flex-1">
-                <p class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-300">Tickets Cerrados</p>
-                <p class="text-3xl font-black text-gray-800 dark:text-white mt-1">{{ stats.ticketsCerrados || 0 }}</p>
-                <p class="text-xs text-gray-500 dark:text-gray-300 font-semibold mt-1">
+                <p class="text-xs font-bold uppercase tracking-wider text-muted">Tickets Cerrados</p>
+                <p class="text-3xl font-black text-body mt-1">{{ stats.ticketsCerrados || 0 }}</p>
+                <p class="text-xs text-secondary font-semibold mt-1">
                   Resueltos exitosamente
                 </p>
               </div>
@@ -114,9 +114,9 @@
                 </svg>
               </div>
               <div class="ml-4 flex-1">
-                <p class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-300">Tiempo Promedio</p>
-                <p class="text-3xl font-black text-gray-800 dark:text-white mt-1">{{ stats.tiempoPromedioRespuesta ? stats.tiempoPromedioRespuesta + 'm' : '0h' }}</p>
-                <p class="text-xs text-gray-500 dark:text-gray-300 font-semibold mt-1">
+                <p class="text-xs font-bold uppercase tracking-wider text-muted">Tiempo Promedio</p>
+                <p class="text-3xl font-black text-body mt-1">{{ stats.tiempoPromedioRespuesta ? stats.tiempoPromedioRespuesta + 'm' : '0h' }}</p>
+                <p class="text-xs text-secondary font-semibold mt-1">
                   Primera respuesta
                 </p>
               </div>
@@ -127,7 +127,7 @@
         <!-- Gráfico de Distribución por Estado (Donut) -->
         <BaseCard class="flex-1 min-h-0 flex flex-col">
           <template #header>
-            <h3 class="text-xs font-extrabold uppercase tracking-wider text-gray-400 dark:text-gray-300">
+            <h3 class="text-xs font-extrabold uppercase tracking-wider text-muted">
               Distribución por Estado
             </h3>
           </template>
@@ -147,7 +147,7 @@
         <!-- Gráfico de Evolución de Tickets (Línea) -->
         <BaseCard class="flex-1 min-h-0 flex flex-col">
           <template #header>
-            <h3 class="text-xs font-extrabold uppercase tracking-wider text-gray-400 dark:text-gray-300">
+            <h3 class="text-xs font-extrabold uppercase tracking-wider text-muted">
               Evolución de Tickets
             </h3>
           </template>
@@ -163,7 +163,7 @@
         <!-- Gráfico de Tickets por Técnico (Barras) -->
         <BaseCard class="flex-1 min-h-0 flex flex-col">
           <template #header>
-            <h3 class="text-xs font-extrabold uppercase tracking-wider text-gray-400 dark:text-gray-300">
+            <h3 class="text-xs font-extrabold uppercase tracking-wider text-muted">
               Tickets por Técnico
             </h3>
           </template>
@@ -201,7 +201,7 @@ import {
 } from 'chart.js'
 import { Line, Bar, Doughnut } from 'vue-chartjs'
 import { getDashboardStats } from '@/services/statsService'
-import { useDarkMode } from '@/composables/useDarkMode'
+import { useThemeStore } from '@/stores/theme'
 
 // Registrar componentes de Chart.js
 ChartJS.register(
@@ -219,7 +219,7 @@ ChartJS.register(
 
 const router = useRouter()
 const authStore = useAuthStore()
-const isDark = useDarkMode()
+const isDark = useThemeStore().isDark
 
 const LineChart = Line
 const BarChart = Bar
@@ -344,7 +344,7 @@ const doughnutChartData = computed(() => {
   if (data.length === 0) {
     return {
       labels: ['Sin datos'],
-      datasets: [{ data: [1], backgroundColor: ['#e5e7eb'] }]
+      datasets: [{ data: [1], backgroundColor: [isDark.value ? '#374151' : '#e5e7eb'] }]
     }
   }
   return {
