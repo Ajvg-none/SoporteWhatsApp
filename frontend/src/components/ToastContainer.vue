@@ -5,7 +5,7 @@
         <div
           v-for="toast in toastStore.toasts"
           :key="toast.id"
-          class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 p-4 flex items-start gap-3 animate-slideIn"
+          class="bg-white dark:bg-card-dark rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-500 p-4 flex items-start gap-3 animate-slideIn"
           :class="borderClass(toast.type)"
           role="status"
         >
@@ -34,8 +34,8 @@
 
           <!-- Contenido -->
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-bold text-slate-800 dark:text-white">{{ title(toast.type) }}</p>
-            <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5 break-words">
+            <p class="text-sm font-bold text-gray-800 dark:text-white">{{ title(toast.type) }}</p>
+            <p class="text-xs text-gray-600 dark:text-gray-300 mt-0.5 break-words">
               {{ toast.message }}
             </p>
           </div>
@@ -43,7 +43,7 @@
           <!-- Cerrar -->
           <button
             @click="toastStore.remove(toast.id)"
-            class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors cursor-pointer shrink-0"
+            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer shrink-0"
             aria-label="Cerrar notificación"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -85,9 +85,9 @@ const TYPES = {
   },
   info: {
     title: 'Información',
-    border: 'border-l-blue-500',
-    iconBg: 'bg-blue-500/10',
-    iconColor: 'text-blue-500',
+    border: 'border-l-primary',
+    iconBg: 'bg-primary/10',
+    iconColor: 'text-primary',
     icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
   }
 }

@@ -136,8 +136,14 @@ async function findOrCreateOpenTicket(numeroCliente, opciones = {}) {
       console.log(`✅ Ticket creado: #${ticket.id}`);
       return ticket;
     } catch (error) {
-      // 4. MANEJO DE CONCURRENCIA: error P2002 (violación de índice único)
-      if (error.code === 'P2002' && error.meta?.target?.includes('numeroCliente')) {
+      // 4. MANEJO DE CONCURRENCIA: dos webhooks simultáneos intentaron crear el
+      //    mismo ticket para el cliente. El índice único parcial
+      //    `idx_unique_open_ticket` (numero_cliente WHERE estado != 'cerrado')
+      //    hace que el segundo INSERT falle con P2002. Para índices creados a
+      //    mano Prisma reporta el target con la columna real ("numero_cliente").
+      //    Como `tickets` no tiene otras restricciones de unicidad, cualquier
+      //    P2002 en este create proviene de esa colisión → recuperar el existente.
+      if (error.code === 'P2002') {
         console.log('⚠️ Concurrencia detectada, recuperando ticket existente...');
 
         // Recuperar el ticket que otro proceso creó

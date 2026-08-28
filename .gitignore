@@ -7,6 +7,8 @@
 *.sql
 *.sqlite
 *.sqlite3
+# Las migraciones SQL de Prisma SÍ se versionan
+!backend/prisma/migrations/**
 
 # Multimedia y archivos subidos por usuarios
 backend/uploads/*

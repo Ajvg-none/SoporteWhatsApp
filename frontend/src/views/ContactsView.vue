@@ -3,8 +3,8 @@
     <!-- Header -->
     <div class="flex items-center justify-between flex-wrap gap-4">
       <div>
-        <h1 class="text-3xl font-bold text-slate-800 dark:text-white">Contactos</h1>
-        <p class="text-slate-500 dark:text-slate-400 mt-1">
+        <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Contactos</h1>
+        <p class="text-gray-500 dark:text-gray-300 mt-1">
           Lista de contactos con soporte activo. Puedes agregar, editar o eliminar contactos.
         </p>
       </div>
@@ -18,7 +18,7 @@
 
     <!-- Búsqueda -->
     <div class="relative max-w-md">
-      <svg class="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="w-5 h-5 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
       </svg>
       <input
@@ -26,7 +26,7 @@
         @input="onBuscar"
         type="text"
         placeholder="Buscar por número, nombre o sucursal..."
-        class="w-full pl-11 pr-4 py-2.5 bg-white dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-700/65 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all duration-200"
+        class="w-full pl-11 pr-4 py-2.5 bg-white dark:bg-gray-800/40 border border-gray-200/70 dark:border-gray-700/65 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all duration-200 placeholder-gray-400 dark:placeholder-gray-300"
       />
     </div>
 
@@ -36,7 +36,7 @@
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
       </svg>
-      <span class="text-sm font-semibold text-slate-400">Cargando contactos...</span>
+      <span class="text-sm font-semibold text-gray-400">Cargando contactos...</span>
     </div>
 
     <!-- Error -->
@@ -48,47 +48,47 @@
 
     <!-- Empty -->
     <div v-else-if="contacts.length === 0" class="text-center py-16">
-      <div class="inline-flex p-4 rounded-full bg-slate-100 dark:bg-slate-800 mb-3">
-        <svg class="h-7 w-7 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="inline-flex p-4 rounded-full bg-gray-100 dark:bg-gray-800 mb-3">
+        <svg class="h-7 w-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
         </svg>
       </div>
-      <p class="text-slate-700 dark:text-slate-300 font-bold text-sm">No hay contactos</p>
-      <p class="text-slate-400 text-xs font-semibold mt-1">Los contactos se crean automáticamente al recibir mensajes, o agrégalos manualmente</p>
+      <p class="text-gray-700 dark:text-gray-300 font-bold text-sm">No hay contactos</p>
+      <p class="text-gray-400 text-xs font-semibold mt-1">Los contactos se crean automáticamente al recibir mensajes, o agrégalos manualmente</p>
     </div>
 
     <!-- Table -->
     <BaseCard v-else class="overflow-hidden">
       <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-100/40 dark:divide-slate-800/60">
-          <thead class="bg-slate-50/50 dark:bg-slate-900/50">
+        <table class="min-w-full divide-y divide-gray-100/40 dark:divide-gray-500">
+          <thead class="bg-gray-50/50 dark:bg-[#757575]">
             <tr>
-              <th class="px-6 py-4 text-left text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Contacto</th>
-              <th class="px-6 py-4 text-left text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Teléfono</th>
-              <th class="px-6 py-4 text-left text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Sucursal</th>
-              <th class="px-6 py-4 text-left text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Registrado</th>
-              <th class="px-6 py-4 text-right text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Acciones</th>
+              <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-400 dark:text-gray-200 uppercase tracking-wider">Contacto</th>
+              <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-400 dark:text-gray-200 uppercase tracking-wider">Teléfono</th>
+              <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-400 dark:text-gray-200 uppercase tracking-wider">Sucursal</th>
+              <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-400 dark:text-gray-200 uppercase tracking-wider">Registrado</th>
+              <th class="px-6 py-4 text-right text-[10px] font-extrabold text-gray-400 dark:text-gray-200 uppercase tracking-wider">Acciones</th>
             </tr>
           </thead>
-          <tbody class="bg-white dark:bg-slate-900 divide-y divide-slate-100/40 dark:divide-slate-800/60">
-            <tr v-for="c in contacts" :key="c.numero_telefono" class="hover:bg-sky-50/10 dark:hover:bg-sky-950/10 transition-colors">
+          <tbody class="bg-white dark:bg-card-dark divide-y divide-gray-100/40 dark:divide-gray-500">
+            <tr v-for="c in contacts" :key="c.numero_telefono" class="hover:bg-primary-light/10 dark:odd:bg-[#A9A9A9] dark:hover:bg-[#B4B4B4] transition-colors">
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center gap-2.5">
-                  <div class="w-8 h-8 rounded-lg bg-sky-50 dark:bg-sky-950/30 border border-sky-100 dark:border-sky-900/40 text-primary flex items-center justify-center text-sm font-bold uppercase">
+                  <div class="w-8 h-8 rounded-lg bg-primary-light dark:bg-[#4a5e0f] border border-primary-light dark:border-[#4a5e0f] text-primary flex items-center justify-center text-sm font-bold uppercase">
                     {{ initials(c.nombre || c.numero_telefono) }}
                   </div>
-                  <div class="text-sm font-bold text-slate-800 dark:text-white">
+                  <div class="text-sm font-bold text-gray-800 dark:text-white">
                     {{ c.nombre || 'Sin nombre' }}
                   </div>
                 </div>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-slate-600 dark:text-slate-400">
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-600 dark:text-gray-300">
                 {{ formatPhone(c.numero_telefono) }}
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
                 {{ c.sucursal || '—' }}
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-xs font-semibold text-slate-400">
+              <td class="px-6 py-4 whitespace-nowrap text-xs font-semibold text-gray-400">
                 {{ formatDate(c.creadoEn) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-right">
@@ -113,8 +113,8 @@
       </div>
 
       <!-- Paginación -->
-      <div v-if="totalPages > 1" class="flex items-center justify-between px-6 py-4 border-t border-slate-100/40 dark:border-slate-800/60">
-        <span class="text-xs font-semibold text-slate-400">
+      <div v-if="totalPages > 1" class="flex items-center justify-between px-6 py-4 border-t border-gray-100/40 dark:border-gray-500/60">
+        <span class="text-xs font-semibold text-gray-400">
           Página {{ page }} de {{ totalPages }} · {{ total }} contactos
         </span>
         <div class="flex gap-2">

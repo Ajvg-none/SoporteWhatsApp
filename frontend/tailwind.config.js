@@ -8,9 +8,18 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#0284c7',
-          dark: '#0369a1',
-          light: '#e0f2fe',
+          DEFAULT: '#95c11f',
+          dark: '#7ca317',
+          light: '#e6f2d0',
+          hover: '#7ca317',
+        },
+        background: {
+          light: '#FFFFFF',
+          dark: '#878787',
+        },
+        card: {
+          light: '#FFFFFF',
+          dark: '#9E9E9E',
         },
         danger: {
           DEFAULT: '#f43f5e',
