@@ -134,6 +134,9 @@
         </router-view>
       </main>
     </div>
+
+    <!-- Notificaciones toast globales -->
+    <ToastContainer />
   </div>
 </template>
 
@@ -141,6 +144,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import ToastContainer from '@/components/ToastContainer.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()

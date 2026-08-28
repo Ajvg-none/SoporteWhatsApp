@@ -29,10 +29,13 @@ export async function getMessagesByNumber(numero) {
 
 /**
  * Enviar un mensaje desde el supervisor al número VIP
- * @param {Object} data - { numeroRemitente, contenido }
+ * @param {Object|FormData} data - { numeroRemitente, contenido } o FormData (con 'archivo' para adjuntos)
  */
 export async function sendDirectMessage(data) {
-  const response = await api.post('/chat-directo', data)
+  const esFormData = typeof FormData !== 'undefined' && data instanceof FormData
+  const response = await api.post('/chat-directo', data, {
+    headers: esFormData ? { 'Content-Type': 'multipart/form-data' } : undefined
+  })
   return response.data
 }
 

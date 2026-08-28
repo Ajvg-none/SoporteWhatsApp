@@ -135,9 +135,39 @@
                   {{ msg.remitente === 'supervisor' ? (msg.supervisorNombre || 'Tú') : (msg.alias || 'VIP') }}
                 </div>
                 
-                <p class="whitespace-pre-wrap break-words leading-relaxed font-medium text-sm">
+                <p
+                  v-if="msg.contenido && (!msg.urlAdjunto || !msg.contenido.startsWith('[Archivo: '))"
+                  class="whitespace-pre-wrap break-words leading-relaxed font-medium text-sm"
+                >
                   {{ msg.contenido }}
                 </p>
+
+                <!-- Adjunto -->
+                <div
+                  v-if="msg.urlAdjunto"
+                  class="mt-2.5 overflow-hidden rounded-xl border"
+                  :class="msg.remitente === 'supervisor' ? 'border-white/15' : 'border-slate-100 dark:border-slate-700/70'"
+                >
+                  <img
+                    v-if="msg.tipo === 'imagen'"
+                    :src="getAttachmentUrl(msg.urlAdjunto)"
+                    class="w-full max-h-60 object-cover cursor-pointer transition-all duration-300 hover:scale-102 hover:brightness-95"
+                    alt="Imagen adjunta"
+                  />
+                  <a
+                    v-else
+                    :href="getAttachmentUrl(msg.urlAdjunto)"
+                    target="_blank"
+                    rel="noopener"
+                    class="flex items-center gap-2.5 px-3.5 py-3"
+                    :class="msg.remitente === 'supervisor' ? 'text-white/90' : 'text-primary'"
+                  >
+                    <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span class="text-xs font-semibold break-all">{{ msg.tipo || 'Archivo' }}</span>
+                  </a>
+                </div>
                 
                 <div class="text-[10px] text-right mt-1.5 font-bold uppercase tracking-wider" :class="msg.remitente === 'supervisor' ? 'text-white/50' : 'text-slate-400 dark:text-slate-400'">
                   {{ formatTime(msg.enviadoEn) }}
@@ -160,17 +190,58 @@
           <!-- Input de respuesta -->
           <div class="p-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
             <form @submit.prevent="handleSendMessage" class="flex items-end gap-2">
-              <textarea
-                v-model="messageText"
-                :placeholder="`Escribe tu respuesta para ${getSelectedChatName()}...`"
-                rows="1"
-                class="flex-1 px-4 py-2.5 bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/65 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary text-slate-900 dark:text-white transition-all duration-200 placeholder-slate-400 min-h-[40px] max-h-[120px] resize-none"
-                @input="autoResize"
-                @keydown.enter.prevent="handleEnterKey"
-              ></textarea>
+              <input
+                ref="fileInput"
+                type="file"
+                class="hidden"
+                @change="handleFileSelect"
+              />
+              <button
+                type="button"
+                @click="fileInput?.click()"
+                title="Adjuntar archivo"
+                class="inline-flex items-center justify-center w-10 h-10 shrink-0 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/10 transition-all cursor-pointer"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                </svg>
+              </button>
+
+              <AudioRecorder @audio-recorded="handleAudioRecorded" class="mb-[1px]" />
+
+              <div class="flex-1 flex flex-col gap-1.5">
+                <div
+                  v-if="selectedFile"
+                  class="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary text-xs font-semibold rounded-lg"
+                >
+                  <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                  </svg>
+                  <span class="truncate max-w-[220px]">{{ selectedFile.name }}</span>
+                  <button
+                    type="button"
+                    @click="clearSelectedFile"
+                    class="ml-auto hover:opacity-70 cursor-pointer"
+                    title="Quitar archivo"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                <textarea
+                  v-model="messageText"
+                  :placeholder="`Escribe tu respuesta para ${getSelectedChatName()}...`"
+                  rows="1"
+                  class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/65 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary text-slate-900 dark:text-white transition-all duration-200 placeholder-slate-400 min-h-[40px] max-h-[120px] resize-none"
+                  @input="autoResize"
+                  @keydown.enter.prevent="handleEnterKey"
+                ></textarea>
+              </div>
               <button
                 type="submit"
-                :disabled="!messageText.trim() || sendLoading"
+                :disabled="(!messageText.trim() && !selectedFile) || sendLoading"
                 class="inline-flex items-center justify-center px-5 py-2.5 bg-primary text-white rounded-xl font-semibold shadow-md shadow-primary/20 hover:bg-primary-dark transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 <svg v-if="sendLoading" class="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
@@ -205,15 +276,18 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useToastStore } from '@/stores/toast'
 import { 
   getDirectChatNumbers, 
   getMessagesByNumber, 
   sendDirectMessage 
 } from '@/services/directChatService'
 import socketService from '@/services/socketService'
+import AudioRecorder from '@/components/base/AudioRecorder.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const toast = useToastStore()
 
 // Estados
 const chatNumbers = ref([])
@@ -223,6 +297,8 @@ const loading = ref(false)
 const messageText = ref('')
 const sendLoading = ref(false)
 const chatContainer = ref(null)
+const fileInput = ref(null)
+const selectedFile = ref(null)
 
 // Computed: Obtener nombre del chat seleccionado
 const getSelectedChatName = () => {
@@ -284,23 +360,63 @@ const selectChat = async (numero) => {
   await loadMessages(numero)
 }
 
+// Seleccionar archivo adjunto
+const handleFileSelect = (e) => {
+  const file = e.target.files?.[0]
+  if (!file) return
+  const maxSize = 25 * 1024 * 1024 // 25 MB
+  if (file.size > maxSize) {
+    toast.error('El archivo supera el límite de 25 MB.')
+    if (fileInput.value) fileInput.value.value = ''
+    return
+  }
+  selectedFile.value = file
+  if (fileInput.value) fileInput.value.value = ''
+}
+
+const clearSelectedFile = () => {
+  selectedFile.value = null
+  if (fileInput.value) fileInput.value.value = ''
+}
+
+// URL absoluta del adjunto servido desde el backend
+const getAttachmentUrl = (url) => {
+  if (!url) return ''
+  if (url.startsWith('http')) return url
+  const base = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+  return base.replace(/\/api\/?$/, '') + url
+}
+
+const handleAudioRecorded = async (blob) => {
+  const file = new File([blob], `nota-voz-${Date.now()}.webm`, { type: 'audio/webm' })
+  selectedFile.value = file
+  await handleSendMessage()
+}
+
 // Enviar mensaje
 const handleSendMessage = async () => {
-  if (!messageText.value.trim() || !selectedNumber.value) return
-  
+  if ((!messageText.value.trim() && !selectedFile.value) || !selectedNumber.value) return
+
   sendLoading.value = true
   try {
-    const response = await sendDirectMessage({
-      numeroRemitente: selectedNumber.value,
-      contenido: messageText.value.trim()
-    })
-    
+    const formData = new FormData()
+    formData.append('numeroRemitente', selectedNumber.value)
+    if (messageText.value.trim()) {
+      formData.append('contenido', messageText.value.trim())
+    }
+    if (selectedFile.value) {
+      formData.append('archivo', selectedFile.value)
+    }
+
+    const response = await sendDirectMessage(formData)
+
     if (response.success) {
       messageText.value = ''
+      clearSelectedFile()
 
       // Si OpenWA no pudo entregar, avisar al supervisor
       if (response.data?.enviado === false) {
-        alert('⚠️ No se pudo enviar por WhatsApp: ' + (response.data?.error || 'destino no resuelto por WhatsApp'))
+        toast.warning('No se pudo enviar por WhatsApp: ' + (response.data?.error || 'destino no resuelto por WhatsApp'))
       }
 
       // Recargar mensajes
@@ -308,11 +424,11 @@ const handleSendMessage = async () => {
       // Recargar números para actualizar último mensaje
       await loadChatNumbers()
     } else {
-      alert(response.error || 'Error al enviar mensaje')
+      toast.error(response.error || 'Error al enviar mensaje')
     }
   } catch (error) {
     console.error('Error sending message:', error)
-    alert(error.response?.data?.error || 'Error de conexión')
+    toast.error(error.response?.data?.error || 'Error de conexión')
   } finally {
     sendLoading.value = false
   }
@@ -326,7 +442,7 @@ const autoResize = (event) => {
 }
 
 const handleEnterKey = () => {
-  if (messageText.value.trim() && !sendLoading.value && selectedNumber.value) {
+  if ((messageText.value.trim() || selectedFile.value) && !sendLoading.value && selectedNumber.value) {
     handleSendMessage()
   }
 }
