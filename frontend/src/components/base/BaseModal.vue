@@ -11,22 +11,22 @@
         
         <!-- Modal Content -->
         <div
-          class="relative bg-white dark:bg-card-dark rounded-2xl shadow-2xl border border-gray-200/80 dark:border-gray-500 max-h-[90vh] flex flex-col overflow-hidden"
+          class="relative bg-surface-card rounded-2xl shadow-2xl border border-edge max-h-[90vh] flex flex-col overflow-hidden"
           :class="sizeClasses"
         >
           <!-- Header -->
           <div
             v-if="title || $slots.header"
-            class="px-6 py-4 border-b border-gray-100 dark:border-gray-500 bg-gray-50/50 dark:bg-[#757575] shrink-0"
+            class="px-6 py-4 border-b border-edge bg-surface-header shrink-0"
           >
             <div class="flex items-center justify-between">
               <slot name="header">
-                <h3 class="text-lg font-bold text-gray-800 dark:text-white">{{ title }}</h3>
+                <h3 class="text-lg font-bold text-body">{{ title }}</h3>
               </slot>
               <button
                 v-if="closable"
                 @click="close"
-                class="p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 cursor-pointer"
+                class="p-2 rounded-xl text-muted hover:text-secondary hover:bg-surface-hover transition-all duration-200 cursor-pointer"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -43,7 +43,7 @@
           <!-- Footer -->
           <div
             v-if="$slots.footer"
-            class="px-6 py-4 border-t border-gray-100 dark:border-gray-500 bg-gray-50/30 dark:bg-card-dark shrink-0"
+            class="px-6 py-4 border-t border-edge bg-surface-hover shrink-0"
           >
             <slot name="footer" />
           </div>

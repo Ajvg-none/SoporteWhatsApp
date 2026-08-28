@@ -4,7 +4,7 @@
       <div
         v-for="notification in notifications"
         :key="notification.id"
-        class="bg-white dark:bg-card-dark rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-500 p-4 flex items-start gap-3 animate-slideIn"
+        class="bg-surface-card rounded-2xl shadow-2xl border border-edge p-4 flex items-start gap-3 animate-slideIn"
         :class="{
           'border-l-4 border-l-primary': notification.type === 'nuevo_mensaje_cliente',
           'border-l-4 border-l-green-500': notification.type === 'ticket_asignado',
@@ -39,21 +39,21 @@
         <!-- Contenido -->
         <div class="flex-1 min-w-0">
           <div class="flex items-center justify-between gap-2">
-            <p class="text-sm font-bold text-gray-800 dark:text-white truncate">
+            <p class="text-sm font-bold text-body truncate">
               {{ getNotificationTitle(notification.type) }}
             </p>
             <button 
               @click="removeNotification(notification.id)"
-              class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
+              class="text-muted hover:text-secondary transition-colors cursor-pointer"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
-          <p class="text-xs text-gray-600 dark:text-gray-300 mt-0.5">{{ notification.mensaje }}</p>
+          <p class="text-xs text-secondary mt-0.5">{{ notification.mensaje }}</p>
           <div class="flex items-center gap-3 mt-2">
-            <span class="text-[10px] font-semibold text-gray-400 dark:text-gray-300">
+            <span class="text-[10px] font-semibold text-muted">
               {{ formatTime(notification.timestamp) }}
             </span>
             <router-link 
@@ -117,7 +117,7 @@ const getIconBgClass = (type) => {
 }
 
 const getIconColorClass = (type) => {
-  return NOTIFICATION_TYPES[type]?.iconColor || 'text-gray-400'
+  return NOTIFICATION_TYPES[type]?.iconColor || 'text-muted'
 }
 
 const getIconPath = (type) => {

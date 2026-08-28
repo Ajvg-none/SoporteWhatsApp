@@ -8,20 +8,20 @@ datasource db {
 }
 
 model Usuario {
-  id                       Int         @id @default(autoincrement())
-  nombre                   String      @db.VarChar(100)
-  email                    String      @unique @db.VarChar(100)
-  contraseñaHash           String      @map("contraseña_hash") @db.VarChar(255)
-  rol                      String      @db.VarChar(20)
-  activo                   Boolean  @default(true)
-  creadoEn                 DateTime?   @default(now()) @map("creado_en") @db.Timestamp(6)
-  actualizadoEn            DateTime?   @default(now()) @updatedAt @map("actualizado_en") @db.Timestamp(6)
+  id                       Int              @id @default(autoincrement())
+  nombre                   String           @db.VarChar(100)
+  email                    String           @unique @db.VarChar(100)
+  contraseñaHash          String           @map("contraseña_hash") @db.VarChar(255)
+  rol                      String           @db.VarChar(20)
+  creadoEn                 DateTime?        @default(now()) @map("creado_en") @db.Timestamp(6)
+  actualizadoEn            DateTime?        @default(now()) @updatedAt @map("actualizado_en") @db.Timestamp(6)
+  activo                   Boolean          @default(true)
   auditoria                Auditoria[]
   mensajes                 Mensaje[]
-  solicitudesTransferencia Ticket[]    @relation("SolicitudesTransferencia")
-  ticketsAsignados         Ticket[]    @relation("TicketsAsignados")
-  numerosExcluidos NumeroExcluido[]
-  mensajesDirectos   MensajeDirecto[]
+  mensajesDirectos         MensajeDirecto[]
+  numerosExcluidos         NumeroExcluido[]
+  solicitudesTransferencia Ticket[]         @relation("SolicitudesTransferencia")
+  ticketsAsignados         Ticket[]         @relation("TicketsAsignados")
 
   @@index([email], map: "idx_usuarios_email")
   @@index([rol], map: "idx_usuarios_rol")
@@ -29,10 +29,9 @@ model Usuario {
 }
 
 model Contacto {
-  numero_telefono String    @id @db.VarChar(30)
+  numero_telefono String    @id @db.VarChar(20)
   nombre          String?   @db.VarChar(100)
   sucursal        String?   @db.VarChar(100)
-  lid_whatsapp    String?   @map("lid_whatsapp") @db.VarChar(30)
   creadoEn        DateTime? @default(now()) @map("creado_en") @db.Timestamp(6)
   actualizadoEn   DateTime? @default(now()) @updatedAt @map("actualizado_en") @db.Timestamp(6)
   tickets         Ticket[]
@@ -44,8 +43,7 @@ model Contacto {
 
 model Ticket {
   id                              Int         @id @default(autoincrement())
-  numeroCliente                   String      @map("numero_cliente") @db.VarChar(30)
-  lidEnvio                        String?     @map("lid_envio") @db.VarChar(30)
+  numeroCliente                   String      @map("numero_cliente") @db.VarChar(20)
   estado                          String      @db.VarChar(20)
   tecnicoAsignadoId               Int?        @map("tecnico_asignado_id")
   solicitudTransferenciaTecnicoId Int?        @map("solicitud_transferencia_tecnico_id")
@@ -63,13 +61,6 @@ model Ticket {
   @@index([creadoEn], map: "idx_tickets_creado_en")
   @@index([estado], map: "idx_tickets_estado")
   @@index([numeroCliente], map: "idx_tickets_numero_cliente")
-  // ÍNDICE ÚNICO PARCIAL (migración manual, NO representable en Prisma):
-  //   idx_unique_open_ticket ON tickets (numero_cliente) WHERE estado != 'cerrado'
-  // Aplicado vía prisma/migrations/20260828000000_unique_open_ticket_per_cliente/migration.sql
-  // Garantiza un solo ticket abierto por número (evita duplicados por concurrencia).
-  // CUIDADO: `prisma db push` podría descartar índices que no conoce; si se borra,
-  // reaplicar la migración con:
-  //   prisma db execute --file prisma/migrations/20260828000000_unique_open_ticket_per_cliente/migration.sql
   @@index([solicitudTransferenciaTecnicoId], map: "idx_tickets_solicitud_transferencia")
   @@index([tecnicoAsignadoId], map: "idx_tickets_tecnico_asignado")
   @@index([transferido], map: "idx_tickets_transferido")
@@ -111,35 +102,32 @@ model Auditoria {
   @@map("auditoria")
 }
 
-
 model NumeroExcluido {
-  id         Int       @id @default(autoincrement())
-  numero     String    @unique @db.VarChar(30)
-  nombre     String?   @db.VarChar(100)
-  motivo     String?   @db.VarChar(255)
-  tipo       String    @default("excluido") @db.VarChar(20) // "excluido" | "chat_privado"
-  creadoPor  Int
-  creadoEn   DateTime? @default(now()) @map("creado_en") @db.Timestamp(6)
-  creadoPorUsuario Usuario @relation(fields: [creadoPor], references: [id])
-  mensajesDirectos     MensajeDirecto[]
+  id               Int              @id @default(autoincrement())
+  numero           String           @unique @db.VarChar(30)
+  motivo           String?          @db.VarChar(255)
+  creadoPor        Int
+  creadoEn         DateTime?        @default(now()) @map("creado_en") @db.Timestamp(6)
+  nombre           String?          @db.VarChar(100)
+  tipo             String           @default("excluido") @db.VarChar(20)
+  mensajesDirectos MensajeDirecto[]
+  creadoPorUsuario Usuario          @relation(fields: [creadoPor], references: [id])
 
   @@index([numero], map: "idx_numeros_excluidos_numero")
   @@map("numeros_excluidos")
 }
 
-
 model MensajeDirecto {
-  id                Int       @id @default(autoincrement())
-  numeroRemitente   String    @map("numero_remitente") @db.VarChar(30)
+  id                Int            @id @default(autoincrement())
+  numeroRemitente   String         @map("numero_remitente") @db.VarChar(30)
   contenido         String
-  tipo              String    @default("texto") @db.VarChar(20) // "texto" | "imagen" | "audio" | "documento"
-  urlAdjunto        String?   @map("url_adjunto") @db.VarChar(255)
-  remitente         String    @db.VarChar(20) // "cliente" | "supervisor"
-  supervisorId      Int?      @map("supervisor_id") // NULL si es del cliente
-  whatsappMessageId String?   @unique @map("whatsapp_message_id") @db.VarChar(255)
-  enviadoEn         DateTime? @default(now()) @map("enviado_en") @db.Timestamp(6)
-  leido             Boolean   @default(false)
-
+  tipo              String         @default("texto") @db.VarChar(20)
+  urlAdjunto        String?        @map("url_adjunto") @db.VarChar(255)
+  remitente         String         @db.VarChar(20)
+  supervisorId      Int?           @map("supervisor_id")
+  whatsappMessageId String?        @unique @map("whatsapp_message_id") @db.VarChar(255)
+  enviadoEn         DateTime?      @default(now()) @map("enviado_en") @db.Timestamp(6)
+  leido             Boolean        @default(false)
   numeroExcluido    NumeroExcluido @relation(fields: [numeroRemitente], references: [numero])
   supervisor        Usuario?       @relation(fields: [supervisorId], references: [id])
 

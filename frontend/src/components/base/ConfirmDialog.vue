@@ -30,12 +30,12 @@
       </div>
 
       <!-- Title -->
-      <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-2">
+      <h3 class="text-lg font-bold text-body mb-2">
         {{ title }}
       </h3>
 
       <!-- Message -->
-      <p class="text-sm text-gray-600 dark:text-gray-300 mb-6">
+      <p class="text-sm text-secondary mb-6">
         {{ message }}
       </p>
 

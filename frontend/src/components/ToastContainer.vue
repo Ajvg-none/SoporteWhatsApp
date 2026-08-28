@@ -5,7 +5,7 @@
         <div
           v-for="toast in toastStore.toasts"
           :key="toast.id"
-          class="bg-white dark:bg-card-dark rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-500 p-4 flex items-start gap-3 animate-slideIn"
+          class="bg-surface-card rounded-2xl shadow-2xl border border-edge p-4 flex items-start gap-3 animate-slideIn"
           :class="borderClass(toast.type)"
           role="status"
         >
@@ -34,8 +34,8 @@
 
           <!-- Contenido -->
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-bold text-gray-800 dark:text-white">{{ title(toast.type) }}</p>
-            <p class="text-xs text-gray-600 dark:text-gray-300 mt-0.5 break-words">
+            <p class="text-sm font-bold text-body">{{ title(toast.type) }}</p>
+            <p class="text-xs text-secondary mt-0.5 break-words">
               {{ toast.message }}
             </p>
           </div>
@@ -43,7 +43,7 @@
           <!-- Cerrar -->
           <button
             @click="toastStore.remove(toast.id)"
-            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer shrink-0"
+            class="text-muted hover:text-secondary transition-colors cursor-pointer shrink-0"
             aria-label="Cerrar notificación"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
